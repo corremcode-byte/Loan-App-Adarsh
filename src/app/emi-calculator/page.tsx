@@ -37,15 +37,15 @@ export default function EMICalculatorPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
         <EMICalculator />
 
-        <div className="text-center mt-12">
-          <p className="text-gray-600 mb-4">
+        <div className="text-center mt-8 sm:mt-12 px-4">
+          <p className="text-sm sm:text-base text-gray-600 mb-4">
             Ready to apply for a loan? Start your application now.
           </p>
-          <Link href="/apply">
-            <Button size="lg">Apply for Loan</Button>
+          <Link href="/apply" className="inline-block w-full sm:w-auto">
+            <Button size="lg" className="w-full sm:w-auto">Apply for Loan</Button>
           </Link>
         </div>
       </main>

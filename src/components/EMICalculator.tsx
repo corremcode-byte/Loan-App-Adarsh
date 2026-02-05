@@ -54,14 +54,14 @@ export default function EMICalculator() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="text-center mb-8">
-        <CardTitle className="text-3xl">EMI Calculator</CardTitle>
-        <CardDescription className="mt-2 text-lg">
+      <div className="text-center mb-6 sm:mb-8">
+        <CardTitle className="text-2xl sm:text-3xl">EMI Calculator</CardTitle>
+        <CardDescription className="mt-2 text-base sm:text-lg px-4">
           Calculate your Equated Monthly Installment
         </CardDescription>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
         {/* Input Section */}
         <Card>
           <h3 className="text-lg font-semibold text-gray-900 mb-6">
@@ -140,10 +140,10 @@ export default function EMICalculator() {
             <>
               <Card className="bg-gradient-to-br from-blue-600 to-blue-700 text-white">
                 <div className="text-center">
-                  <p className="text-blue-100 text-sm uppercase tracking-wide">
+                  <p className="text-blue-100 text-xs sm:text-sm uppercase tracking-wide">
                     Your {frequency} EMI
                   </p>
-                  <p className="text-4xl font-bold mt-2">
+                  <p className="text-2xl sm:text-3xl md:text-4xl font-bold mt-2 break-words">
                     {formatCurrency(result.emi)}
                   </p>
                 </div>
@@ -238,14 +238,14 @@ export default function EMICalculator() {
       </div>
 
       {/* Formula Info */}
-      <Card className="mt-8 bg-gray-50">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+      <Card className="mt-6 sm:mt-8 bg-gray-50">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
           How is EMI Calculated?
         </h3>
-        <div className="bg-white p-4 rounded-lg font-mono text-center mb-4">
+        <div className="bg-white p-3 sm:p-4 rounded-lg font-mono text-center mb-4 text-xs sm:text-sm overflow-x-auto">
           EMI = [P × R × (1+R)<sup>N</sup>] / [(1+R)<sup>N</sup> - 1]
         </div>
-        <div className="grid md:grid-cols-3 gap-4 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs sm:text-sm">
           <div>
             <p className="font-medium text-gray-700">P = Principal</p>
             <p className="text-gray-500">The loan amount you borrow</p>

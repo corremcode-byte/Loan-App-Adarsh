@@ -106,32 +106,33 @@ export default function ApplicationTable({
 
   return (
     <>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-gray-50 border-b">
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <div className="overflow-x-auto -mx-4 sm:mx-0">
+        <div className="inline-block min-w-full align-middle">
+          <table className="min-w-full">
+            <thead>
+              <tr className="bg-gray-50 border-b">
+                <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Applicant
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Loan Amount
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Salary
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Phone
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Eligibility Score
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Suggestion
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Status
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                 Date
               </th>
             </tr>
@@ -143,7 +144,7 @@ export default function ApplicationTable({
                 className="hover:bg-gray-50 cursor-pointer transition-colors"
                 onClick={() => setSelectedApp(app)}
               >
-                <td className="px-4 py-4 whitespace-nowrap">
+                <td className="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap">
                   <div>
                     <div className="font-medium text-gray-900">
                       {app.fullName}
@@ -151,7 +152,7 @@ export default function ApplicationTable({
                     <div className="text-sm text-gray-500">{app.email}</div>
                   </div>
                 </td>
-                <td className="px-4 py-4 whitespace-nowrap">
+                <td className="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap">
                   <div className="font-medium text-gray-900">
                     {formatCurrency(app.loanAmount)}
                   </div>
@@ -165,15 +166,15 @@ export default function ApplicationTable({
                 <td className="px-4 py-4 whitespace-nowrap text-gray-700">
                   +91 {app.phoneNumber}
                 </td>
-                <td className="px-4 py-4 whitespace-nowrap">
+                <td className="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap">
                   <span className={`font-bold ${getScoreColor(app.eligibilityScore)}`}>
                     {app.eligibilityScore}%
                   </span>
                 </td>
-                <td className="px-4 py-4 whitespace-nowrap">
+                <td className="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap">
                   {getSuggestionBadge(app.eligibilityStatus)}
                 </td>
-                <td className="px-4 py-4 whitespace-nowrap">
+                <td className="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap">
                   {getStatusBadge(app.status)}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -183,6 +184,7 @@ export default function ApplicationTable({
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Application Detail Modal */}

@@ -6,10 +6,12 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 
 export default function HomePage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -30,6 +32,8 @@ export default function HomePage() {
               </div>
               <span className="text-xl font-bold text-gray-900">LoanEase</span>
             </div>
+
+            {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-6">
               <Link
                 href="/emi-calculator"
@@ -43,29 +47,61 @@ export default function HomePage() {
                 </Button>
               </Link>
             </nav>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-gray-600 hover:text-blue-600"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {mobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
           </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <nav className="md:hidden mt-4 pb-4 border-t pt-4 space-y-3">
+              <Link
+                href="/emi-calculator"
+                className="block text-gray-600 hover:text-blue-600 transition-colors py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                EMI Calculator
+              </Link>
+              <Link href="/admin/login" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="outline" size="sm" className="w-full">
+                  Team Login
+                </Button>
+              </Link>
+            </nav>
+          )}
         </div>
       </header>
 
       {/* Hero Section */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
+        <div className="text-center mb-12 md:mb-16">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 px-2">
             Get Your Loan Approved
             <span className="text-blue-600"> Fast & Easy</span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
             Apply for personal or secured loans with our simple online process.
             Get instant eligibility check and competitive interest rates.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/apply">
-              <Button size="lg" className="px-8">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
+            <Link href="/apply" className="w-full sm:w-auto">
+              <Button size="lg" className="px-8 w-full sm:w-auto">
                 Apply for Loan
               </Button>
             </Link>
-            <Link href="/emi-calculator">
-              <Button variant="outline" size="lg" className="px-8">
+            <Link href="/emi-calculator" className="w-full sm:w-auto">
+              <Button variant="outline" size="lg" className="px-8 w-full sm:w-auto">
                 Calculate EMI
               </Button>
             </Link>
@@ -73,7 +109,7 @@ export default function HomePage() {
         </div>
 
         {/* Features */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-12 md:mb-16">
           <Card hover className="text-center">
             <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg
@@ -149,11 +185,11 @@ export default function HomePage() {
         </div>
 
         {/* Loan Types */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12">
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 md:p-8 lg:p-12">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 text-center mb-6 sm:mb-8">
             Choose Your Loan Type
           </h2>
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
             <div className="border border-gray-200 rounded-xl p-6 hover:border-blue-500 hover:shadow-md transition-all">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -249,12 +285,12 @@ export default function HomePage() {
         </div>
 
         {/* CTA */}
-        <div className="text-center mt-16">
-          <p className="text-gray-600 mb-4">
+        <div className="text-center mt-12 md:mt-16 px-4">
+          <p className="text-sm sm:text-base text-gray-600 mb-4">
             Ready to get started? Apply now and get instant eligibility check.
           </p>
-          <Link href="/apply">
-            <Button size="lg" className="px-12">
+          <Link href="/apply" className="inline-block w-full sm:w-auto">
+            <Button size="lg" className="px-12 w-full sm:w-auto">
               Start Application
             </Button>
           </Link>
@@ -262,10 +298,10 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12 mt-16">
+      <footer className="bg-gray-900 text-gray-400 py-8 sm:py-12 mt-12 sm:mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center gap-2 mb-4 md:mb-0">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <svg
                   className="w-5 h-5 text-white"
