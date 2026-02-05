@@ -48,19 +48,26 @@ export default function HomePage() {
               </Link>
             </nav>
 
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-gray-600 hover:text-blue-600"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {mobileMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
-            </button>
+            {/* Mobile Navigation */}
+            <div className="md:hidden flex items-center gap-2">
+              <Link href="/admin/login">
+                <Button variant="outline" size="sm" className="text-xs px-3">
+                  Team
+                </Button>
+              </Link>
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 text-gray-600 hover:text-blue-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {mobileMenuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  )}
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* Mobile Menu */}
@@ -73,9 +80,9 @@ export default function HomePage() {
               >
                 EMI Calculator
               </Link>
-              <Link href="/admin/login" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="outline" size="sm" className="w-full">
-                  Team Login
+              <Link href="/apply" onClick={() => setMobileMenuOpen(false)}>
+                <Button size="sm" className="w-full">
+                  Apply for Loan
                 </Button>
               </Link>
             </nav>
