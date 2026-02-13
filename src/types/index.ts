@@ -25,7 +25,9 @@ export interface ApplicationFormData {
   loanType: 'secured' | 'unsecured' | '';
 
   // Personal Details
-  fullName: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
   gender: 'male' | 'female' | 'other' | '';
   dateOfBirth: string;
   maritalStatus: 'single' | 'married' | 'divorced' | 'widowed' | '';

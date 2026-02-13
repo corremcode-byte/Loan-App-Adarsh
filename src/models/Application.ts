@@ -26,7 +26,9 @@ export interface IApplication extends Document {
   loanType: 'secured' | 'unsecured';
 
   // Personal Details
-  fullName: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
   gender: 'male' | 'female' | 'other';
   dateOfBirth: Date;
   maritalStatus: 'single' | 'married' | 'divorced' | 'widowed';
@@ -108,7 +110,9 @@ const ApplicationSchema = new Schema<IApplication>(
     },
 
     // Personal Details
-    fullName: { type: String, required: true },
+    firstName: { type: String, required: true },
+    middleName: { type: String, default: '' },
+    lastName: { type: String, default: '' },
     gender: {
       type: String,
       enum: ['male', 'female', 'other'],

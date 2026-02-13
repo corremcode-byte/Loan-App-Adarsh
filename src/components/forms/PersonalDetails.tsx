@@ -7,7 +7,9 @@ import { CardTitle, CardDescription } from '@/components/ui/Card';
 
 interface PersonalDetailsProps {
   data: {
-    fullName: string;
+    firstName: string;
+    middleName: string;
+    lastName: string;
     gender: string;
     dateOfBirth: string;
     maritalStatus: string;
@@ -62,14 +64,30 @@ export default function PersonalDetails({
       </div>
 
       <div className="space-y-6">
-        <Input
-          label="Full Name (as per PAN)"
-          placeholder="Enter your full name"
-          value={data.fullName}
-          onChange={(e) => onChange('fullName', e.target.value)}
-          error={errors.fullName}
-          required
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+          <Input
+            label="First Name"
+            placeholder="First name"
+            value={data.firstName}
+            onChange={(e) => onChange('firstName', e.target.value)}
+            error={errors.firstName}
+            required
+          />
+          <Input
+            label="Middle Name"
+            placeholder="Middle name (optional)"
+            value={data.middleName}
+            onChange={(e) => onChange('middleName', e.target.value)}
+            error={errors.middleName}
+          />
+          <Input
+            label="Last Name"
+            placeholder="Last name"
+            value={data.lastName}
+            onChange={(e) => onChange('lastName', e.target.value)}
+            error={errors.lastName}
+          />
+        </div>
 
         <Input
           label="Email Address"

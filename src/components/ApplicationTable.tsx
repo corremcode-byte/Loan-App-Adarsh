@@ -147,7 +147,7 @@ export default function ApplicationTable({
                 <td className="px-3 sm:px-4 py-3 sm:py-4 whitespace-nowrap">
                   <div>
                     <div className="font-medium text-gray-900">
-                      {app.fullName}
+                      {`${app.firstName} ${app.lastName}`}
                     </div>
                     <div className="text-sm text-gray-500">{app.email}</div>
                   </div>
@@ -200,7 +200,7 @@ export default function ApplicationTable({
             <div className="flex items-center justify-between pb-4 border-b">
               <div>
                 <h3 className="text-xl font-semibold text-gray-900">
-                  {selectedApp.fullName}
+                  {`${selectedApp.firstName} ${selectedApp.middleName ? selectedApp.middleName + ' ' : ''}${selectedApp.lastName}`}
                 </h3>
                 <p className="text-sm text-gray-500">
                   Applied on {formatDate(selectedApp.createdAt)}

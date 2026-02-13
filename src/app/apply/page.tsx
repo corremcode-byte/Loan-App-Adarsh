@@ -20,7 +20,9 @@ const initialFormData: ApplicationFormData = {
   phoneNumber: '',
   isPhoneVerified: false,
   loanType: 'unsecured',
-  fullName: '',
+  firstName: '',
+  middleName: '',
+  lastName: '',
   gender: '',
   dateOfBirth: '',
   maritalStatus: '',
@@ -113,7 +115,7 @@ export default function ApplyPage() {
 
     switch (currentStep) {
       case 'personal':
-        if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
+        if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
         if (!formData.email.trim()) newErrors.email = 'Email is required';
         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
           newErrors.email = 'Invalid email format';
@@ -269,7 +271,9 @@ export default function ApplyPage() {
         return (
           <PersonalDetails
             data={{
-              fullName: formData.fullName,
+              firstName: formData.firstName,
+              middleName: formData.middleName,
+              lastName: formData.lastName,
               gender: formData.gender as 'male' | 'female' | 'other' | '',
               dateOfBirth: formData.dateOfBirth,
               maritalStatus: formData.maritalStatus as 'single' | 'married' | 'divorced' | 'widowed' | '',
@@ -376,7 +380,7 @@ export default function ApplyPage() {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="text-gray-500">Name:</span>{' '}
-                        <span className="font-medium">{formData.fullName}</span>
+                        <span className="font-medium">{`${formData.firstName} ${formData.middleName ? formData.middleName + ' ' : ''}${formData.lastName}`}</span>
                       </div>
                       <div>
                         <span className="text-gray-500">Phone:</span>{' '}
