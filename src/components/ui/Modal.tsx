@@ -41,7 +41,7 @@ export default function Modal({
     sm: 'max-w-sm',
     md: 'max-w-md',
     lg: 'max-w-lg',
-    xl: 'max-w-xl',
+    xl: 'max-w-2xl',
     full: 'max-w-4xl',
   };
 
@@ -50,24 +50,27 @@ export default function Modal({
       <div className="flex min-h-screen items-center justify-center p-4">
         {/* Backdrop */}
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+          className="fixed inset-0 bg-[#162247]/60 backdrop-blur-[2px] transition-opacity"
           onClick={onClose}
         />
 
-        {/* Modal */}
+        {/* Modal panel */}
         <div
-          className={`relative bg-white rounded-xl shadow-xl ${sizeStyles[size]} w-full transform transition-all`}
+          className={`relative bg-white rounded-2xl shadow-2xl ${sizeStyles[size]} w-full transform transition-all animate-fadeIn max-h-[90vh] flex flex-col`}
         >
           {/* Header */}
           {title && (
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-6 bg-[#F9BF4C] rounded-full" />
+                <h2 className="text-lg font-semibold text-[#1E293B]">{title}</h2>
+              </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
               >
                 <svg
-                  className="w-6 h-6"
+                  className="w-5 h-5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -84,7 +87,7 @@ export default function Modal({
           )}
 
           {/* Content */}
-          <div className="p-6">{children}</div>
+          <div className="p-6 overflow-y-auto">{children}</div>
         </div>
       </div>
     </div>

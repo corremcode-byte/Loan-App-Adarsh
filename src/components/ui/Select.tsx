@@ -32,7 +32,7 @@ export default function Select({
       {label && (
         <label
           htmlFor={selectId}
-          className="block text-sm font-medium text-gray-700 mb-1"
+          className="block text-sm font-semibold text-[#1E293B] mb-1.5"
         >
           {label}
           {props.required && <span className="text-red-500 ml-1">*</span>}
@@ -40,16 +40,18 @@ export default function Select({
       )}
       <select
         id={selectId}
-        className={`w-full px-4 py-2 border rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white ${
+        className={`w-full px-4 py-2.5 border rounded-lg text-[#1E293B] transition-all duration-200 focus:outline-none focus:ring-2 appearance-none ${
           error
-            ? 'border-red-500 focus:ring-red-500'
-            : 'border-gray-300 hover:border-gray-400'
-        } ${props.disabled ? 'bg-gray-100 cursor-not-allowed' : ''} ${className}`}
+            ? 'border-red-400 focus:ring-red-200 focus:border-red-400 bg-red-50/30'
+            : 'border-slate-200 hover:border-slate-300 focus:ring-[#223265]/20 focus:border-[#223265]'
+        } ${
+          props.disabled ? 'bg-slate-50 text-slate-400 cursor-not-allowed' : 'bg-white'
+        } ${className}`}
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-          backgroundPosition: 'right 0.5rem center',
+          backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23223265' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+          backgroundPosition: 'right 0.75rem center',
           backgroundRepeat: 'no-repeat',
-          backgroundSize: '1.5em 1.5em',
+          backgroundSize: '1.25em 1.25em',
           paddingRight: '2.5rem',
         }}
         {...props}
@@ -61,9 +63,11 @@ export default function Select({
           </option>
         ))}
       </select>
-      {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+      {error && (
+        <p className="mt-1.5 text-xs font-medium text-red-500">{error}</p>
+      )}
       {helperText && !error && (
-        <p className="mt-1 text-sm text-gray-500">{helperText}</p>
+        <p className="mt-1.5 text-xs text-slate-400">{helperText}</p>
       )}
     </div>
   );

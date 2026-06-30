@@ -1,8 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #1e293b;
+  --background: #F8FAFC;
+  --foreground: #1E293B;
+  --navy: #223265;
+  --navy-dark: #162247;
+  --navy-hover: #31437F;
+  --gold: #F9BF4C;
+  --gold-dark: #E2A92A;
+  --gold-light: #FDE9B8;
 }
 
 body {
@@ -10,12 +16,14 @@ body {
   color: var(--foreground);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -23,12 +31,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background: #94a3b8;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #64748b;
 }
 
 /* Form input focus styles */
@@ -49,11 +57,11 @@ input[type='number'] {
   -moz-appearance: textfield;
 }
 
-/* Animation utilities */
+/* Page transition */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -62,18 +70,34 @@ input[type='number'] {
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.25s ease-out;
 }
 
-/* Progress step styles */
+/* Skeleton loader shimmer */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+/* Progress step styles — navy brand */
 .step-active {
-  @apply bg-blue-600 text-white;
+  background-color: #223265;
+  color: white;
 }
 
 .step-completed {
-  @apply bg-green-500 text-white;
+  background-color: #223265;
+  color: white;
 }
 
 .step-pending {
-  @apply bg-gray-200 text-gray-500;
+  background-color: #e2e8f0;
+  color: #94a3b8;
 }

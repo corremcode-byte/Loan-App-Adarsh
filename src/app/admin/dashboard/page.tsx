@@ -8,12 +8,51 @@ import Card from '@/components/ui/Card';
 import ApplicationTable from '@/components/ApplicationTable';
 import { Application } from '@/types';
 import { formatCurrency } from '@/lib/emi';
+import {
+  FileText,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  IndianRupee,
+  SlidersHorizontal,
+} from 'lucide-react';
 
 interface AdminUser {
   id: string;
   username: string;
   name: string;
   role: string;
+}
+
+interface StatCardProps {
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+  accentClass: string;
+  iconBgClass: string;
+  colSpanClass?: string;
+}
+
+function StatCard({ label, value, icon, accentClass, iconBgClass, colSpanClass = '' }: StatCardProps) {
+  return (
+    <div
+      className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 border-l-4 ${accentClass} ${colSpanClass}`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={`w-10 h-10 ${iconBgClass} rounded-lg flex items-center justify-center flex-shrink-0`}
+        >
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide leading-none">
+            {label}
+          </p>
+          <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1 truncate">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function AdminDashboard() {
@@ -26,7 +65,9 @@ export default function AdminDashboard() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [scoreFilter, setScoreFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
-  const [suggestionFilter, setSuggestionFilter] = useState<'all' | 'likely_approved' | 'likely_rejected'>('all');
+  const [suggestionFilter, setSuggestionFilter] = useState<
+    'all' | 'likely_approved' | 'likely_rejected'
+  >('all');
 
   // Team Members state
   const [showTeamModal, setShowTeamModal] = useState(false);
@@ -205,7 +246,7 @@ export default function AdminDashboard() {
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#223265]"></div>
       </div>
     );
   }
@@ -217,12 +258,12 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-40">
+      <header className="bg-white shadow-sm sticky top-0 z-40 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2 sm:gap-4">
               <Link href="/" className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-[#223265] rounded-lg flex items-center justify-center">
                   <svg
                     className="w-6 h-6 text-white"
                     fill="none"
@@ -239,12 +280,14 @@ export default function AdminDashboard() {
                 </div>
                 <span className="text-lg sm:text-xl font-bold text-gray-900">LoanEase</span>
               </Link>
-              <span className="hidden sm:inline text-gray-400">|</span>
-              <span className="hidden sm:inline text-gray-600 font-medium text-sm">Admin Dashboard</span>
+              <span className="hidden sm:inline text-gray-300">|</span>
+              <span className="hidden sm:inline text-gray-500 font-medium text-sm">
+                Admin Dashboard
+              </span>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-              <span className="text-xs sm:text-sm text-gray-600 hidden md:inline">
-                Welcome, <span className="font-medium">{adminUser.name}</span>
+              <span className="text-xs sm:text-sm text-gray-500 hidden md:inline">
+                Welcome, <span className="font-semibold text-gray-800">{adminUser.name}</span>
               </span>
               <Button
                 variant="outline"
@@ -267,108 +310,140 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <Card padding="sm" className="text-center">
-            <p className="text-xs sm:text-sm text-gray-500">Total Applications</p>
-            <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.total}</p>
-          </Card>
-          <Card padding="sm" className="text-center">
-            <p className="text-xs sm:text-sm text-gray-500">Pending</p>
-            <p className="text-xl sm:text-2xl font-bold text-yellow-600">{stats.pending}</p>
-          </Card>
-          <Card padding="sm" className="text-center">
-            <p className="text-xs sm:text-sm text-gray-500">Approved</p>
-            <p className="text-xl sm:text-2xl font-bold text-green-600">{stats.approved}</p>
-          </Card>
-          <Card padding="sm" className="text-center">
-            <p className="text-xs sm:text-sm text-gray-500">Rejected</p>
-            <p className="text-xl sm:text-2xl font-bold text-red-600">{stats.rejected}</p>
-          </Card>
-          <Card padding="sm" className="text-center md:col-span-1 col-span-2">
-            <p className="text-xs sm:text-sm text-gray-500">Approved Amount</p>
-            <p className="text-base sm:text-lg md:text-xl font-bold text-blue-600 break-words">
-              {formatCurrency(stats.totalAmount)}
-            </p>
-          </Card>
+          <StatCard
+            label="Total Applications"
+            value={stats.total}
+            icon={<FileText className="w-5 h-5 text-blue-600" />}
+            accentClass="border-l-blue-500"
+            iconBgClass="bg-blue-50"
+          />
+          <StatCard
+            label="Pending"
+            value={stats.pending}
+            icon={<Clock className="w-5 h-5 text-yellow-600" />}
+            accentClass="border-l-yellow-500"
+            iconBgClass="bg-yellow-50"
+          />
+          <StatCard
+            label="Approved"
+            value={stats.approved}
+            icon={<CheckCircle2 className="w-5 h-5 text-green-600" />}
+            accentClass="border-l-green-500"
+            iconBgClass="bg-green-50"
+          />
+          <StatCard
+            label="Rejected"
+            value={stats.rejected}
+            icon={<XCircle className="w-5 h-5 text-red-600" />}
+            accentClass="border-l-red-500"
+            iconBgClass="bg-red-50"
+          />
+          <StatCard
+            label="Approved Amount"
+            value={formatCurrency(stats.totalAmount)}
+            icon={<IndianRupee className="w-5 h-5 text-blue-600" />}
+            accentClass="border-l-blue-500"
+            iconBgClass="bg-blue-50"
+            colSpanClass="col-span-2 md:col-span-1"
+          />
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-thin">
-          {(['all', 'pending', 'approved', 'rejected'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-                filter === f
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-              <span className="ml-1 sm:ml-2 text-xs opacity-75">
-                (
-                {f === 'all'
-                  ? stats.total
-                  : f === 'pending'
-                  ? stats.pending
-                  : f === 'approved'
-                  ? stats.approved
-                  : stats.rejected}
-                )
-              </span>
-            </button>
-          ))}
+        <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1 scrollbar-thin">
+          {(['all', 'pending', 'approved', 'rejected'] as const).map((f) => {
+            const count =
+              f === 'all'
+                ? stats.total
+                : f === 'pending'
+                ? stats.pending
+                : f === 'approved'
+                ? stats.approved
+                : stats.rejected;
+            return (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${
+                  filter === f
+                    ? 'bg-[#223265] text-white shadow-sm'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                }`}
+              >
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+                <span
+                  className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+                    filter === f ? 'bg-[#31437F] text-slate-200' : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Advanced Filters */}
         <Card padding="sm" className="mb-6">
+          <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-100">
+            <SlidersHorizontal className="w-4 h-4 text-gray-400" />
+            <span className="text-sm font-semibold text-gray-700">Filters</span>
+          </div>
           <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4">
             {/* Date Range Filter */}
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <div className="flex-1 sm:flex-initial">
-                <label className="block text-xs text-gray-500 mb-1">From Date</label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">From Date</label>
                 <input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-2 focus:ring-[#223265]/20 focus:border-[#223265] bg-gray-50 hover:bg-white transition-colors"
                 />
               </div>
-              <div className="flex-1 sm:flex-initial">
-                <label className="block text-xs text-gray-500 mb-1">To Date</label>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">To Date</label>
                 <input
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-2 focus:ring-[#223265]/20 focus:border-[#223265] bg-gray-50 hover:bg-white transition-colors"
                 />
               </div>
             </div>
 
             {/* Eligibility Score Filter */}
-            <div className="flex-1 sm:flex-initial min-w-[150px]">
-              <label className="block text-xs text-gray-500 mb-1">Eligibility Score</label>
+            <div className="flex-1 sm:flex-initial min-w-[160px]">
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Eligibility Score
+              </label>
               <select
                 value={scoreFilter}
-                onChange={(e) => setScoreFilter(e.target.value as 'all' | 'high' | 'medium' | 'low')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                onChange={(e) =>
+                  setScoreFilter(e.target.value as 'all' | 'high' | 'medium' | 'low')
+                }
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-2 focus:ring-[#223265]/20 focus:border-[#223265] bg-gray-50 hover:bg-white transition-colors"
               >
                 <option value="all">All Scores</option>
                 <option value="high">High (70%+)</option>
-                <option value="medium">Medium (40-69%)</option>
+                <option value="medium">Medium (40–69%)</option>
                 <option value="low">Low (&lt;40%)</option>
               </select>
             </div>
 
             {/* Suggestion Filter */}
-            <div className="flex-1 sm:flex-initial min-w-[150px]">
-              <label className="block text-xs text-gray-500 mb-1">Suggestion</label>
+            <div className="flex-1 sm:flex-initial min-w-[160px]">
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Suggestion</label>
               <select
                 value={suggestionFilter}
-                onChange={(e) => setSuggestionFilter(e.target.value as 'all' | 'likely_approved' | 'likely_rejected')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                onChange={(e) =>
+                  setSuggestionFilter(
+                    e.target.value as 'all' | 'likely_approved' | 'likely_rejected'
+                  )
+                }
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-2 focus:ring-[#223265]/20 focus:border-[#223265] bg-gray-50 hover:bg-white transition-colors"
               >
                 <option value="all">All Suggestions</option>
                 <option value="likely_approved">Likely Approved</option>
@@ -376,8 +451,8 @@ export default function AdminDashboard() {
               </select>
             </div>
 
-            {/* Clear Filters Button */}
-            <div className="flex items-end flex-1 sm:flex-initial">
+            {/* Clear + Count */}
+            <div className="flex items-end gap-4 flex-1 sm:flex-initial sm:ml-auto">
               <button
                 onClick={() => {
                   setDateFrom('');
@@ -385,21 +460,19 @@ export default function AdminDashboard() {
                   setScoreFilter('all');
                   setSuggestionFilter('all');
                 }}
-                className="w-full sm:w-auto px-3 py-2 text-xs sm:text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                className="px-3 py-2 text-sm text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors font-medium"
               >
                 Clear Filters
               </button>
-            </div>
-
-            {/* Results Count */}
-            <div className="w-full sm:w-auto sm:ml-auto text-xs sm:text-sm text-gray-500 text-center sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 mt-2 sm:mt-0">
-              Showing {filteredApplications.length} of {applications.length} applications
+              <span className="text-sm text-gray-400 self-center whitespace-nowrap">
+                {filteredApplications.length} of {applications.length} results
+              </span>
             </div>
           </div>
         </Card>
 
         {/* Applications Table */}
-        <Card padding="none">
+        <Card padding="none" shadow="md">
           <ApplicationTable
             applications={filteredApplications}
             onStatusChange={handleStatusChange}
@@ -418,8 +491,18 @@ export default function AdminDashboard() {
                 onClick={() => setShowTeamModal(false)}
                 className="text-gray-400 hover:text-gray-600"
               >
-                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-5 h-5 sm:w-6 sm:h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -431,14 +514,12 @@ export default function AdminDashboard() {
                 <form onSubmit={handleAddMember} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Name
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                       <input
                         type="text"
                         value={newMember.name}
                         onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-2 focus:ring-[#223265]/20 focus:border-[#223265]"
                         placeholder="Full Name"
                         required
                       />
@@ -451,7 +532,7 @@ export default function AdminDashboard() {
                         type="email"
                         value={newMember.username}
                         onChange={(e) => setNewMember({ ...newMember, username: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-2 focus:ring-[#223265]/20 focus:border-[#223265]"
                         placeholder="email@example.com"
                         required
                       />
@@ -464,20 +545,18 @@ export default function AdminDashboard() {
                         type="password"
                         value={newMember.password}
                         onChange={(e) => setNewMember({ ...newMember, password: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-2 focus:ring-[#223265]/20 focus:border-[#223265]"
                         placeholder="Minimum 6 characters"
                         minLength={6}
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Role
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                       <select
                         value={newMember.role}
                         onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-2 focus:ring-[#223265]/20 focus:border-[#223265] bg-white"
                       >
                         <option value="manager">Manager</option>
                         <option value="admin">Admin</option>
@@ -508,8 +587,8 @@ export default function AdminDashboard() {
                         className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-blue-600 font-medium text-lg">
+                          <div className="w-10 h-10 bg-[#223265]/10 rounded-full flex items-center justify-center">
+                            <span className="text-[#223265] font-medium text-lg">
                               {member.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
@@ -523,7 +602,7 @@ export default function AdminDashboard() {
                             className={`px-3 py-1 text-xs font-medium rounded-full ${
                               member.role === 'admin'
                                 ? 'bg-purple-100 text-purple-700'
-                                : 'bg-blue-100 text-blue-700'
+                                : 'bg-[#223265]/10 text-[#223265]'
                             }`}
                           >
                             {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
@@ -533,7 +612,12 @@ export default function AdminDashboard() {
                             className="text-red-500 hover:text-red-700 p-1"
                             title="Remove member"
                           >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
