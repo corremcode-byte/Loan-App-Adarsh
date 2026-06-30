@@ -59,6 +59,7 @@ export interface ApplicationFormData {
 
   // Calculated Fields
   expectedEMI: number;
+  cibilScore: number;
 }
 
 export interface Application extends ApplicationFormData {

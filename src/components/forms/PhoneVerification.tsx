@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Card, { CardTitle, CardDescription } from '@/components/ui/Card';
@@ -91,19 +91,9 @@ export default function PhoneVerification({
   return (
     <Card className="max-w-md mx-auto">
       <div className="text-center mb-6">
-        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg
-            className="w-8 h-8 text-blue-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-            />
+        <div className="w-16 h-16 bg-[#223265]/8 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-[#223265]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
           </svg>
         </div>
         <CardTitle>Verify Your Phone Number</CardTitle>
@@ -135,18 +125,13 @@ export default function PhoneVerification({
               />
             </div>
           </div>
-          <Button
-            onClick={handleSendOTP}
-            loading={loading}
-            fullWidth
-            size="lg"
-          >
+          <Button onClick={handleSendOTP} loading={loading} fullWidth size="lg">
             Send OTP
           </Button>
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="text-center text-sm text-gray-600 mb-4">
+          <div className="text-center text-sm text-slate-500 mb-4">
             OTP sent to +91 {phoneNumber}
             <button
               onClick={() => {
@@ -154,7 +139,7 @@ export default function PhoneVerification({
                 setOtp('');
                 setError('');
               }}
-              className="text-blue-600 hover:underline ml-2"
+              className="text-[#223265] hover:text-[#31437F] hover:underline ml-2 font-medium transition-colors"
             >
               Change
             </button>
@@ -173,19 +158,14 @@ export default function PhoneVerification({
             className="text-center text-2xl tracking-widest"
           />
           {message && (
-            <p className="text-sm text-green-600 text-center">{message}</p>
+            <p className="text-sm text-emerald-600 text-center font-medium">{message}</p>
           )}
-          <Button
-            onClick={handleVerifyOTP}
-            loading={loading}
-            fullWidth
-            size="lg"
-          >
+          <Button onClick={handleVerifyOTP} loading={loading} fullWidth size="lg">
             Verify OTP
           </Button>
           <button
             onClick={handleSendOTP}
-            className="w-full text-sm text-blue-600 hover:underline"
+            className="w-full text-sm text-[#223265] hover:text-[#31437F] hover:underline font-medium transition-colors"
             disabled={loading}
           >
             Resend OTP
@@ -193,8 +173,8 @@ export default function PhoneVerification({
         </div>
       )}
 
-      <p className="text-xs text-gray-500 text-center mt-4">
-        For testing, use OTP: <strong>123456</strong>
+      <p className="text-xs text-slate-400 text-center mt-5">
+        For testing, use OTP: <strong className="text-slate-600">123456</strong>
       </p>
     </Card>
   );
