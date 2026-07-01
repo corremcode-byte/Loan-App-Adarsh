@@ -15,6 +15,7 @@ import CollateralDetails from '@/components/forms/CollateralDetails';
 import LoanDetails from '@/components/forms/LoanDetails';
 import EligibilityResult from '@/components/EligibilityResult';
 import { ApplicationFormData, Collateral, ExistingLoan, EligibilityResult as EligibilityResultType, FormStep } from '@/types';
+import { recommendLoanSlab, formatSlabAmount, SlabRecommendationResult } from '@/lib/loanSlabRecommendation';
 
 const initialFormData: ApplicationFormData = {
   phoneNumber: '',
@@ -65,18 +66,20 @@ export default function ApplyPage() {
   const [formData, setFormData] = useState<ApplicationFormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [interestRate, setInterestRate] = useState(12);
   const [eligibilityResult, setEligibilityResult] = useState<EligibilityResultType | null>(null);
   const [showEligibility, setShowEligibility] = useState(false);
+  const [slabRecommendation, setSlabRecommendation] = useState<SlabRecommendationResult | null>(null);
 
   const currentStepIndex = steps.findIndex((s) => s.key === currentStep);
 
-  const updateFormData = (field: string, value: unknown) => {
+  const updateFormData = useCallback((field: string, value: unknown) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
     setErrors((prev) => ({ ...prev, [field]: '' }));
-  };
+  }, []);
 
   const updateAddressField = (field: string, value: string) => {
     setFormData((prev) => ({
@@ -110,6 +113,17 @@ export default function ApplyPage() {
       expectedEMI: emi,
     }));
   }, []);
+
+  // Scrolls to the first input that has a validation error after React re-renders.
+  const scrollToFirstError = () => {
+    setTimeout(() => {
+      const el = document.querySelector<HTMLElement>('.border-red-400');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+      }
+    }, 50);
+  };
 
   const validateStep = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -160,6 +174,8 @@ export default function ApplyPage() {
           newErrors.loanAmount = 'Loan amount must be at least ₹50,000';
         if (!formData.loanPurpose) newErrors.loanPurpose = 'Loan purpose is required';
         if (!formData.preferredTenure) newErrors.preferredTenure = 'Tenure is required';
+        if (!interestRate || interestRate < 10.5)
+          newErrors.interestRate = 'Minimum expected interest rate is 10.5%';
         break;
     }
 
@@ -178,7 +194,10 @@ export default function ApplyPage() {
   };
 
   const handleNext = () => {
-    if (!validateStep()) return;
+    if (!validateStep()) {
+      scrollToFirstError();
+      return;
+    }
 
     const stepKeys = steps.map((s) => s.key);
     let nextIndex = currentStepIndex + 1;
@@ -207,6 +226,7 @@ export default function ApplyPage() {
       const data = await response.json();
       if (data.eligibility) {
         setEligibilityResult(data.eligibility);
+        setSlabRecommendation(recommendLoanSlab(formData, data.eligibility.score));
         setShowEligibility(true);
       }
     } catch (error) {
@@ -349,8 +369,10 @@ export default function ApplyPage() {
               loanAmount: formData.loanAmount,
               loanPurpose: formData.loanPurpose,
               preferredTenure: formData.preferredTenure,
+              interestRate,
             }}
             onChange={updateFormData}
+            onInterestRateChange={setInterestRate}
             onEMIChange={handleEMIChange}
             errors={errors}
             loanType={formData.loanType as 'secured' | 'unsecured'}
@@ -363,13 +385,90 @@ export default function ApplyPage() {
             {showEligibility && eligibilityResult ? (
               <div className="mb-8">
                 <EligibilityResult result={eligibilityResult} />
-                <div className="flex gap-4 justify-center mt-6">
-                  <Button variant="outline" onClick={() => setShowEligibility(false)}>
-                    Edit Application
-                  </Button>
-                  <Button onClick={handleSubmit} loading={loading}>
-                    Submit Application
-                  </Button>
+
+                {/* Loan slab recommendation — shown when the person doesn't qualify for the full amount */}
+                {slabRecommendation && slabRecommendation.recommendedSlab < slabRecommendation.requestedAmount && (
+                  <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#F9BF4C]">
+                        <svg className="h-5 w-5 text-[#162247]" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-amber-900 mb-1">
+                          {slabRecommendation.recommendedSlab === 0
+                            ? 'No Offer Available'
+                            : 'Alternative Offer Available'}
+                        </h4>
+                        <p className="text-sm text-amber-800 leading-relaxed mb-4">
+                          {slabRecommendation.frontendMessage}
+                        </p>
+
+                        {slabRecommendation.recommendedSlab > 0 && (
+                          <div className="mb-4 flex flex-wrap items-center gap-3">
+                            <div className="rounded-lg border border-amber-200 bg-white px-4 py-2.5 text-center min-w-[100px]">
+                              <p className="text-xs font-medium text-amber-600 mb-0.5">We Can Offer</p>
+                              <p className="text-lg font-bold text-amber-900">
+                                {formatSlabAmount(slabRecommendation.recommendedSlab)}
+                              </p>
+                            </div>
+                            <span className="text-amber-400 font-bold text-lg">vs</span>
+                            <div className="rounded-lg border border-amber-200 bg-white px-4 py-2.5 text-center min-w-[100px]">
+                              <p className="text-xs font-medium text-amber-600 mb-0.5">You Requested</p>
+                              <p className="text-lg font-bold text-amber-900">
+                                {formatSlabAmount(slabRecommendation.requestedAmount)}
+                              </p>
+                            </div>
+                            <div className="rounded-lg border border-amber-200 bg-white px-4 py-2.5 text-center">
+                              <p className="text-xs font-medium text-amber-600 mb-0.5">Coverage</p>
+                              <p className="text-lg font-bold text-amber-900">
+                                {slabRecommendation.percentageOfRequested}%
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {slabRecommendation.improvementTips.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 mb-2">
+                              How to improve your offer
+                            </p>
+                            <ul className="space-y-1.5">
+                              {slabRecommendation.improvementTips.map((tip, i) => (
+                                <li key={i} className="flex items-start gap-2 text-xs text-amber-800">
+                                  <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-900">
+                                    {i + 1}
+                                  </span>
+                                  {tip}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-col items-center gap-3 mt-6">
+                  <div className="flex gap-4 justify-center">
+                    <Button variant="outline" onClick={() => setShowEligibility(false)} disabled={loading}>
+                      Edit Application
+                    </Button>
+                    <Button onClick={handleSubmit} loading={loading}>
+                      Submit Application
+                    </Button>
+                  </div>
+                  {loading && (
+                    <p className="text-sm text-slate-500 flex items-center gap-2">
+                      <svg className="animate-spin h-3.5 w-3.5 text-[#223265]" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Submitting your application — please wait, don&apos;t close this page.
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
