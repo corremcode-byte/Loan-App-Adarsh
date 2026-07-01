@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { CardTitle, CardDescription } from '@/components/ui/Card';
@@ -11,8 +11,10 @@ interface LoanDetailsProps {
     loanAmount: number;
     loanPurpose: string;
     preferredTenure: number;
+    interestRate: number;
   };
   onChange: (field: string, value: string | number) => void;
+  onInterestRateChange: (rate: number) => void;
   onEMIChange: (emi: number) => void;
   errors?: Record<string, string>;
   loanType: 'secured' | 'unsecured' | '';
@@ -21,11 +23,11 @@ interface LoanDetailsProps {
 export default function LoanDetails({
   data,
   onChange,
+  onInterestRateChange,
   onEMIChange,
   errors = {},
   loanType,
 }: LoanDetailsProps) {
-  const [interestRate, setInterestRate] = useState(12);
   const [frequency, setFrequency] = useState<Frequency>('monthly');
 
   const purposeOptions = [
@@ -73,19 +75,19 @@ export default function LoanDetails({
     if (data.loanAmount > 0 && data.preferredTenure > 0) {
       const result = calculateEMI(
         data.loanAmount,
-        interestRate,
+        data.interestRate,
         data.preferredTenure / 12,
         frequency
       );
       onEMIChange(result.emi);
     }
-  }, [data.loanAmount, data.preferredTenure, interestRate, frequency, onEMIChange]);
+  }, [data.loanAmount, data.preferredTenure, data.interestRate, frequency, onEMIChange]);
 
   const emiResult =
     data.loanAmount > 0 && data.preferredTenure > 0
       ? calculateEMI(
           data.loanAmount,
-          interestRate,
+          data.interestRate,
           data.preferredTenure / 12,
           frequency
         )
@@ -143,11 +145,12 @@ export default function LoanDetails({
             label="Expected Interest Rate (%)"
             type="number"
             placeholder="Enter rate"
-            value={interestRate}
-            onChange={(e) => setInterestRate(parseFloat(e.target.value) || 0)}
-            helperText="Indicative rate for EMI calculation"
+            value={data.interestRate}
+            onChange={(e) => onInterestRateChange(parseFloat(e.target.value) || 0)}
+            error={errors.interestRate}
+            helperText="Minimum rate is 10.5%. Indicative — actual rate may vary."
             step="0.1"
-            min={5}
+            min={10.5}
             max={30}
           />
         </div>
