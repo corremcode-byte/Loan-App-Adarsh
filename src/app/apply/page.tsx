@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import SiteHeader from '@/components/layout/SiteHeader';
 import PhoneVerification from '@/components/forms/PhoneVerification';
 import LoanTypeSelector from '@/components/forms/LoanTypeSelector';
 import PersonalDetails from '@/components/forms/PersonalDetails';
@@ -117,7 +117,7 @@ export default function ApplyPage() {
   // Scrolls to the first input that has a validation error after React re-renders.
   const scrollToFirstError = () => {
     setTimeout(() => {
-      const el = document.querySelector<HTMLElement>('.border-red-400');
+      const el = document.querySelector<HTMLElement>('[aria-invalid="true"]');
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         el.focus();
@@ -200,7 +200,7 @@ export default function ApplyPage() {
     }
 
     const stepKeys = steps.map((s) => s.key);
-    let nextIndex = currentStepIndex + 1;
+    const nextIndex = currentStepIndex + 1;
 
     // Skip collateral step for unsecured loans (it's embedded in financial step)
     while (nextIndex < stepKeys.length) {
@@ -569,31 +569,15 @@ export default function ApplyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-10 h-10 bg-[#223265] rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <span className="text-xl font-bold text-[#1E293B]">LoanEase</span>
-            </Link>
-            <Link href="/emi-calculator" className="text-sm text-[#223265] hover:text-[#31437F] font-medium transition-colors">
-              EMI Calculator
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-surface">
+      <SiteHeader variant="apply" />
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Progress Steps */}
         {currentStep !== 'phone' && (
           <div className="mb-10">
-            <div className="flex items-center justify-between">
+            {/* Desktop stepper — full step indicators */}
+            <div className="hidden md:flex items-center justify-between">
               {steps.slice(1).map((step, index) => {
                 const stepIndex = index + 1;
                 const isCompleted = stepIndex < currentStepIndex;
@@ -609,10 +593,10 @@ export default function ApplyPage() {
                         disabled={!canNavigate}
                         className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
                           isCompleted
-                            ? 'bg-[#223265] text-white hover:bg-[#31437F] cursor-pointer shadow-sm'
+                            ? 'bg-navy text-white hover:bg-navy-hover cursor-pointer shadow-sm'
                             : isCurrent
-                            ? 'bg-[#223265] text-white cursor-default ring-4 ring-[#223265]/15'
-                            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                            ? 'bg-navy text-white cursor-default ring-2 ring-offset-2 ring-navy/60'
+                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                         }`}
                         title={canNavigate ? `Go back to ${step.label}` : ''}
                       >
@@ -628,9 +612,9 @@ export default function ApplyPage() {
                         onClick={() => canNavigate && setCurrentStep(step.key)}
                         className={`text-xs font-medium ${
                           isCurrent
-                            ? 'text-[#223265]'
+                            ? 'text-navy font-semibold'
                             : isCompleted
-                            ? 'text-[#223265]/60 cursor-pointer hover:text-[#223265]'
+                            ? 'text-navy/60 cursor-pointer hover:text-navy'
                             : 'text-slate-400'
                         }`}
                       >
@@ -640,13 +624,33 @@ export default function ApplyPage() {
                     {index < steps.length - 2 && (
                       <div
                         className={`flex-1 h-[2px] mx-1.5 rounded-full ${
-                          isCompleted ? 'bg-[#223265]' : 'bg-slate-200'
+                          isCompleted ? 'bg-navy' : 'bg-slate-200'
                         }`}
                       />
                     )}
                   </React.Fragment>
                 );
               })}
+            </div>
+
+            {/* Mobile stepper — compact "Step X of Y" + progress bar */}
+            <div className="md:hidden">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-sm font-semibold text-foreground">
+                  Step {currentStepIndex} of {steps.length - 1}
+                </span>
+                <span className="text-sm font-medium text-navy">
+                  {steps[currentStepIndex]?.label}
+                </span>
+              </div>
+              <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-navy rounded-full transition-all duration-300"
+                  style={{
+                    width: `${(currentStepIndex / (steps.length - 1)) * 100}%`,
+                  }}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -656,11 +660,11 @@ export default function ApplyPage() {
 
         {/* Navigation Buttons */}
         {!['phone', 'loan-type', 'review'].includes(currentStep) && (
-          <div className="flex justify-between mt-8 max-w-2xl mx-auto">
-            <Button variant="outline" onClick={handleBack}>
+          <div className="mt-8 max-w-2xl mx-auto border-t border-slate-100 pt-6 flex justify-between">
+            <Button variant="outline" size="lg" onClick={handleBack}>
               Back
             </Button>
-            <Button onClick={handleNext}>Continue</Button>
+            <Button size="lg" onClick={handleNext}>Continue</Button>
           </div>
         )}
       </main>

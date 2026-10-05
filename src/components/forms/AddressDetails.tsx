@@ -3,7 +3,7 @@
 import React from 'react';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
-import { CardTitle, CardDescription } from '@/components/ui/Card';
+import StepHeader from '@/components/apply/StepHeader';
 import { Address } from '@/types';
 
 interface AddressDetailsProps {
@@ -53,55 +53,59 @@ export default function AddressDetails({
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="text-center mb-8">
-        <CardTitle>Address Details</CardTitle>
-        <CardDescription className="mt-2">
-          Please provide your current residential address
-        </CardDescription>
-      </div>
-
-      <div className="space-y-6">
-        <Input
-          label="Street Address"
-          placeholder="House/Flat No., Building Name, Street"
-          value={data.street}
-          onChange={(e) => onChange('street', e.target.value)}
-          error={errors.street}
-          required
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-7 sm:p-9">
+        <StepHeader
+          title="Address Details"
+          description="Please provide your current residential address"
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-5">
+          {/* Full-width street */}
           <Input
-            label="City"
-            placeholder="Enter your city"
-            value={data.city}
-            onChange={(e) => onChange('city', e.target.value)}
-            error={errors.city}
+            label="Street Address"
+            placeholder="House/Flat No., Building Name, Street"
+            value={data.street}
+            onChange={(e) => onChange('street', e.target.value)}
+            error={errors.street}
             required
           />
 
-          <Select
-            label="State"
-            options={indianStates}
-            value={data.state}
-            onChange={(e) => onChange('state', e.target.value)}
-            error={errors.state}
-            required
-          />
+          {/* City + State side by side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <Input
+              label="City"
+              placeholder="Enter your city"
+              value={data.city}
+              onChange={(e) => onChange('city', e.target.value)}
+              error={errors.city}
+              required
+            />
+            <Select
+              label="State"
+              options={indianStates}
+              value={data.state}
+              onChange={(e) => onChange('state', e.target.value)}
+              error={errors.state}
+              required
+            />
+          </div>
+
+          {/* PIN Code — narrower field, only 6 digits */}
+          <div className="max-w-[14rem]">
+            <Input
+              label="PIN Code"
+              placeholder="6-digit PIN code"
+              value={data.pincode}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                onChange('pincode', value);
+              }}
+              error={errors.pincode}
+              maxLength={6}
+              required
+            />
+          </div>
         </div>
-
-        <Input
-          label="PIN Code"
-          placeholder="Enter 6-digit PIN code"
-          value={data.pincode}
-          onChange={(e) => {
-            const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-            onChange('pincode', value);
-          }}
-          error={errors.pincode}
-          maxLength={6}
-          required
-        />
       </div>
     </div>
   );
