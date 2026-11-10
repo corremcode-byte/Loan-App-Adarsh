@@ -49,6 +49,11 @@ export default function AddressDetails({
     { value: 'delhi', label: 'Delhi' },
     { value: 'chandigarh', label: 'Chandigarh' },
     { value: 'puducherry', label: 'Puducherry' },
+    { value: 'andaman-nicobar', label: 'Andaman & Nicobar Islands' },
+    { value: 'dadra-nagar-haveli-daman-diu', label: 'Dadra & Nagar Haveli and Daman & Diu' },
+    { value: 'jammu-kashmir', label: 'Jammu & Kashmir' },
+    { value: 'ladakh', label: 'Ladakh' },
+    { value: 'lakshadweep', label: 'Lakshadweep' },
   ];
 
   return (

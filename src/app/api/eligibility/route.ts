@@ -15,6 +15,15 @@ export async function POST(request: Request) {
       );
     }
 
+    // Bug 5: enforce type-specific loan minimums
+    const minAmount = data.loanType === 'secured' ? 100000 : 50000;
+    if (data.loanAmount < minAmount) {
+      return NextResponse.json(
+        { error: `Minimum loan amount for ${data.loanType} loans is ₹${minAmount.toLocaleString('en-IN')}` },
+        { status: 400 }
+      );
+    }
+
     // Calculate eligibility
     const result = calculateEligibility(data);
 

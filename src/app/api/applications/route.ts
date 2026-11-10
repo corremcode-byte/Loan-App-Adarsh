@@ -30,11 +30,20 @@ export async function POST(request: Request) {
 
     const data = await request.json();
 
-    // Calculate EMI if not provided
+    // Bug 5: enforce type-specific loan minimums
+    const minAmount = data.loanType === 'secured' ? 100000 : 50000;
+    if (data.loanAmount && data.loanAmount < minAmount) {
+      return NextResponse.json(
+        { error: `Minimum loan amount for ${data.loanType} loans is ₹${minAmount.toLocaleString('en-IN')}` },
+        { status: 400 }
+      );
+    }
+
+    // Calculate EMI if not provided — use submitted interestRate, fall back to 12%
     if (!data.expectedEMI && data.loanAmount && data.preferredTenure) {
       const emiResult = calculateEMI(
         data.loanAmount,
-        12, // Default 12% interest rate
+        data.interestRate || 12,
         data.preferredTenure / 12,
         'monthly'
       );
