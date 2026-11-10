@@ -57,6 +57,7 @@ export interface IApplication extends Document {
   loanAmount: number;
   loanPurpose: string;
   preferredTenure: number;
+  interestRate: number;
 
   // Calculated Fields
   expectedEMI: number;
@@ -153,6 +154,7 @@ const ApplicationSchema = new Schema<IApplication>(
     loanAmount: { type: Number, required: true },
     loanPurpose: { type: String, required: true },
     preferredTenure: { type: Number, required: true },
+    interestRate: { type: Number, default: 12 },
 
     // Calculated Fields
     expectedEMI: { type: Number, default: 0 },

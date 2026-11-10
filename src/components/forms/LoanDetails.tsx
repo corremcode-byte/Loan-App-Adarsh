@@ -30,6 +30,12 @@ export default function LoanDetails({
 }: LoanDetailsProps) {
   const [frequency, setFrequency] = useState<Frequency>('monthly');
 
+  // Local string state prevents the "0 prefix" bug when user clears the field.
+  // We propagate a parsed number on each valid keystroke and enforce the minimum on blur.
+  const [rateInput, setRateInput] = useState<string>(
+    data.interestRate > 0 ? String(data.interestRate) : ''
+  );
+
   const purposeOptions = [
     { value: 'home-purchase', label: 'Home Purchase' },
     { value: 'home-renovation', label: 'Home Renovation' },
@@ -133,9 +139,9 @@ export default function LoanDetails({
           <Select
             label="Preferred Tenure"
             options={tenureOptions}
-            value={data.preferredTenure.toString()}
+            value={data.preferredTenure === 0 ? '' : data.preferredTenure.toString()}
             onChange={(e) =>
-              onChange('preferredTenure', parseInt(e.target.value) || 12)
+              onChange('preferredTenure', parseInt(e.target.value) || 0)
             }
             error={errors.preferredTenure}
             required
@@ -145,8 +151,22 @@ export default function LoanDetails({
             label="Expected Interest Rate (%)"
             type="number"
             placeholder="Enter rate"
-            value={data.interestRate}
-            onChange={(e) => onInterestRateChange(parseFloat(e.target.value) || 0)}
+            value={rateInput}
+            onChange={(e) => {
+              const raw = e.target.value;
+              setRateInput(raw);
+              const parsed = parseFloat(raw);
+              if (raw !== '' && !isNaN(parsed)) {
+                onInterestRateChange(parsed);
+              }
+            }}
+            onBlur={() => {
+              const parsed = parseFloat(rateInput);
+              if (isNaN(parsed) || rateInput === '' || parsed < 10.5) {
+                setRateInput('12');
+                onInterestRateChange(12);
+              }
+            }}
             error={errors.interestRate}
             helperText="Minimum rate is 10.5%. Indicative — actual rate may vary."
             step="0.1"

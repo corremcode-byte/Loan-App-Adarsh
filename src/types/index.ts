@@ -47,6 +47,7 @@ export interface ApplicationFormData {
   yearsOfExperience: number;
 
   // Loan History
+  hasExistingLoans: 'yes' | 'no' | '';   // explicit user selection — '' means unselected
   existingLoans: ExistingLoan[];
 
   // Collateral Details (for secured loans)
@@ -56,6 +57,7 @@ export interface ApplicationFormData {
   loanAmount: number;
   loanPurpose: string;
   preferredTenure: number;
+  interestRate: number;
 
   // Calculated Fields
   expectedEMI: number;

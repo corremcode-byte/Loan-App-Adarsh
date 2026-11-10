@@ -40,11 +40,13 @@ const initialFormData: ApplicationFormData = {
   employerName: '',
   monthlyIncome: 0,
   yearsOfExperience: 0,
+  hasExistingLoans: '',
   existingLoans: [],
   collateral: undefined,
   loanAmount: 0,
   loanPurpose: '',
-  preferredTenure: 12,
+  preferredTenure: 0,
+  interestRate: 12,
   expectedEMI: 0,
   cibilScore: 0,
 };
@@ -66,7 +68,6 @@ export default function ApplyPage() {
   const [formData, setFormData] = useState<ApplicationFormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [interestRate, setInterestRate] = useState(12);
   const [eligibilityResult, setEligibilityResult] = useState<EligibilityResultType | null>(null);
   const [showEligibility, setShowEligibility] = useState(false);
   const [slabRecommendation, setSlabRecommendation] = useState<SlabRecommendationResult | null>(null);
@@ -165,18 +166,34 @@ export default function ApplyPage() {
             : 'Monthly salary must be at least ₹35,000';
         if (formData.yearsOfExperience < 3)
           newErrors.yearsOfExperience = 'Minimum 3 years of experience required';
+        // Bugs 11/13: experience cannot exceed age-18 (the form's minimum working age)
+        if (formData.dateOfBirth) {
+          const dob = new Date(formData.dateOfBirth);
+          const today = new Date();
+          const age = Math.floor((today.getTime() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+          const maxExperience = Math.max(0, age - 18);
+          if (formData.yearsOfExperience > maxExperience) {
+            newErrors.yearsOfExperience = `Years of experience (${formData.yearsOfExperience}) cannot exceed ${maxExperience} years for someone aged ${age}`;
+          }
+        }
         if (!formData.cibilScore || formData.cibilScore < 700)
           newErrors.cibilScore = 'Minimum required CIBIL score is 700';
+        // Bug 14: user must explicitly select yes or no for existing loans
+        if (!formData.hasExistingLoans)
+          newErrors.hasExistingLoans = 'Please indicate whether you have existing loans';
         break;
 
-      case 'loan-details':
-        if (!formData.loanAmount || formData.loanAmount < 50000)
-          newErrors.loanAmount = 'Loan amount must be at least ₹50,000';
+      case 'loan-details': {
+        const minLoanAmount = formData.loanType === 'secured' ? 100000 : 50000;
+        const minLoanLabel = formData.loanType === 'secured' ? '₹1,00,000' : '₹50,000';
+        if (!formData.loanAmount || formData.loanAmount < minLoanAmount)
+          newErrors.loanAmount = `Loan amount must be at least ${minLoanLabel}`;
         if (!formData.loanPurpose) newErrors.loanPurpose = 'Loan purpose is required';
         if (!formData.preferredTenure) newErrors.preferredTenure = 'Tenure is required';
-        if (!interestRate || interestRate < 10.5)
+        if (!formData.interestRate || formData.interestRate < 10.5)
           newErrors.interestRate = 'Minimum expected interest rate is 10.5%';
         break;
+      }
     }
 
     // Validate collateral for secured loans
@@ -340,6 +357,8 @@ export default function ApplyPage() {
                 existingLoans: formData.existingLoans as ExistingLoan[],
                 cibilScore: formData.cibilScore,
               }}
+              hasExistingLoans={formData.hasExistingLoans}
+              onHasExistingLoansChange={(value) => updateFormData('hasExistingLoans', value)}
               onChange={updateFormData}
               errors={errors}
             />
@@ -369,10 +388,10 @@ export default function ApplyPage() {
               loanAmount: formData.loanAmount,
               loanPurpose: formData.loanPurpose,
               preferredTenure: formData.preferredTenure,
-              interestRate,
+              interestRate: formData.interestRate,
             }}
             onChange={updateFormData}
-            onInterestRateChange={setInterestRate}
+            onInterestRateChange={(rate) => updateFormData('interestRate', rate)}
             onEMIChange={handleEMIChange}
             errors={errors}
             loanType={formData.loanType as 'secured' | 'unsecured'}
@@ -428,6 +447,29 @@ export default function ApplyPage() {
                             </div>
                           </div>
                         )}
+
+                        {/* Binding constraint explanation (Bug 12) */}
+                        {(() => {
+                          const { bindingConstraint, foirReason, ltiReason, turnoverReason, collateralReason, cibilReason, scoreReason } = slabRecommendation.reasoning;
+                          const constraintReasonMap: Record<string, string | null> = {
+                            FOIR: foirReason,
+                            LTI: ltiReason,
+                            Turnover: turnoverReason,
+                            Collateral: collateralReason,
+                            CIBIL: cibilReason,
+                            Score: scoreReason,
+                          };
+                          const constraintReason = constraintReasonMap[bindingConstraint];
+                          if (!constraintReason) return null;
+                          return (
+                            <div className="mb-4 p-3 bg-amber-100 rounded-lg border border-amber-200">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 mb-1">
+                                Why this amount? — {bindingConstraint} limit applied
+                              </p>
+                              <p className="text-xs text-amber-800">{constraintReason}</p>
+                            </div>
+                          );
+                        })()}
 
                         {slabRecommendation.improvementTips.length > 0 && (
                           <div>
@@ -542,8 +584,16 @@ export default function ApplyPage() {
                         <p className="font-semibold text-[#223265]">₹{formData.loanAmount.toLocaleString()}</p>
                       </div>
                       <div>
+                        <span className="text-slate-400">Purpose</span>
+                        <p className="font-medium text-[#1E293B] capitalize">{formData.loanPurpose.replace(/-/g, ' ')}</p>
+                      </div>
+                      <div>
                         <span className="text-slate-400">Tenure</span>
                         <p className="font-medium text-[#1E293B]">{formData.preferredTenure} months</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400">Interest Rate</span>
+                        <p className="font-medium text-[#1E293B]">{formData.interestRate}% p.a.</p>
                       </div>
                       <div>
                         <span className="text-slate-400">Expected EMI</span>
@@ -551,6 +601,35 @@ export default function ApplyPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Collateral Summary (secured loans only) */}
+                  {formData.loanType === 'secured' && formData.collateral && (
+                    <div className="rounded-xl p-5 border border-slate-200">
+                      <h3 className="text-sm font-semibold text-[#223265] uppercase tracking-wide mb-3">
+                        Collateral Details
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="text-slate-400">Property Type</span>
+                          <p className="font-medium text-[#1E293B] capitalize">{formData.collateral.propertyType}</p>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Estimated Value</span>
+                          <p className="font-medium text-[#1E293B]">₹{formData.collateral.estimatedValue.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Ownership</span>
+                          <p className="font-medium text-[#1E293B] capitalize">{formData.collateral.ownershipStatus.replace(/-/g, ' ')}</p>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Coverage vs Loan</span>
+                          <p className={`font-medium ${formData.collateral.estimatedValue >= formData.loanAmount ? 'text-green-700' : 'text-red-600'}`}>
+                            {formData.collateral.estimatedValue >= formData.loanAmount ? 'Sufficient' : 'Insufficient'} ({Math.round((formData.collateral.estimatedValue / formData.loanAmount) * 100)}%)
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-8 flex justify-center">

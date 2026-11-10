@@ -33,7 +33,10 @@ function calculateDTI(data: ApplicationFormData): StrategyResult {
       maxScore: 25,
       passed: true,
       reason: `DTI ratio of ${dti.toFixed(1)}% is moderate. Consider reducing existing debts.`,
-      recommendation: 'Consider paying off some existing loans to improve your debt ratio.',
+      // Bug 15: only suggest clearing existing loans when there are some to clear
+      recommendation: data.existingLoans.length > 0
+        ? 'Consider paying off some existing loans to improve your debt ratio.'
+        : 'Consider requesting a smaller loan amount or choosing a longer tenure to reduce your monthly EMI.',
     };
   } else {
     return {
@@ -137,24 +140,27 @@ function assessCreditCapacity(data: ApplicationFormData): StrategyResult {
   const reasons: string[] = [];
   const recommendations: string[] = [];
 
-  // Years of experience check
-  const minExperience = data.occupation === 'salaried' ? 1 : 2;
-  if (data.yearsOfExperience >= minExperience * 3) {
-    score += 7;
-    reasons.push(`Strong work experience of ${data.yearsOfExperience} years.`);
-  } else if (data.yearsOfExperience >= minExperience) {
-    score += 4;
-    reasons.push(`Adequate work experience of ${data.yearsOfExperience} years.`);
-  } else {
-    score += 1;
-    reasons.push(`Limited work experience of ${data.yearsOfExperience} years.`);
-    recommendations.push(`Minimum ${minExperience} years of experience recommended for ${data.occupation} individuals.`);
-  }
-
-  // Age check (calculate from DOB)
+  // Years of experience check — cap at age-18 to prevent impossible values (Bugs 11/13)
   const dob = new Date(data.dateOfBirth);
   const today = new Date();
   const age = Math.floor((today.getTime() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  const maxPossibleExperience = Math.max(0, age - 18);
+  const effectiveExperience = Math.min(data.yearsOfExperience, maxPossibleExperience);
+
+  const minExperience = data.occupation === 'salaried' ? 1 : 2;
+  if (effectiveExperience >= minExperience * 3) {
+    score += 7;
+    reasons.push(`Strong work experience of ${effectiveExperience} years.`);
+  } else if (effectiveExperience >= minExperience) {
+    score += 4;
+    reasons.push(`Adequate work experience of ${effectiveExperience} years.`);
+  } else {
+    score += 1;
+    reasons.push(`Limited work experience of ${effectiveExperience} years.`);
+    recommendations.push(`Minimum ${minExperience} years of experience recommended for ${data.occupation} individuals.`);
+  }
+
+  // Age check (dob/today/age already computed above)
 
   if (age >= 25 && age <= 55) {
     score += 5;
@@ -266,9 +272,32 @@ export function calculateEligibility(data: ApplicationFormData): EligibilityResu
   const percentageScore = Math.round((totalScore / maxScore) * 100);
 
   const reasons = strategies.map((s) => s.reason);
-  const recommendations = strategies
+
+  // Bug 8: deduplicate overlapping loan-reduction recommendations — keep only the most specific one
+  const rawRecommendations = strategies
     .filter((s) => s.recommendation)
     .map((s) => s.recommendation as string);
+
+  // Pure loan-reduction recs: mention loan amount/size but NOT debt clearing
+  const isPureLoanReduction = (r: string): boolean => {
+    const lower = r.toLowerCase();
+    const addressesLoanAmount = lower.includes('loan amount') || lower.includes('loan size');
+    const alsoAddressesDebtClearing =
+      lower.includes('existing debts') || lower.includes('existing loans') || lower.includes('pay off');
+    return addressesLoanAmount && !alsoAddressesDebtClearing;
+  };
+
+  const pureLoanRecs = rawRecommendations.filter((r) => isPureLoanReduction(r));
+  const distinctRecs = rawRecommendations.filter((r) => !isPureLoanReduction(r));
+
+  // Prefer a pure loan-reduction rec that also mentions tenure (more informative)
+  const representativeLoanRec =
+    pureLoanRecs.find((r) => r.toLowerCase().includes('tenure')) || pureLoanRecs[0];
+
+  const recommendations: string[] = [
+    ...(representativeLoanRec ? [representativeLoanRec] : []),
+    ...distinctRecs,
+  ];
 
   // Determine status based on score
   let status: 'likely_approved' | 'likely_rejected';
@@ -278,7 +307,7 @@ export function calculateEligibility(data: ApplicationFormData): EligibilityResu
     status = 'likely_rejected';
   }
 
-  // Add additional recommendations for secured loans with collateral
+  // Collateral check for secured loans
   if (data.loanType === 'secured' && data.collateral) {
     if (data.collateral.estimatedValue >= data.loanAmount * 1.5) {
       reasons.push('Strong collateral coverage improves approval chances.');
