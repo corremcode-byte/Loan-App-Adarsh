@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Input from '@/components/ui/Input';
-import { CardTitle, CardDescription } from '@/components/ui/Card';
+import StepHeader from '@/components/apply/StepHeader';
 
 interface DocumentDetailsProps {
   data: {
@@ -35,15 +35,13 @@ export default function DocumentDetails({
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="text-center mb-8">
-        <CardTitle>Document Details</CardTitle>
-        <CardDescription className="mt-2">
-          Please provide your KYC document numbers
-        </CardDescription>
-      </div>
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-7 sm:p-9">
+        <StepHeader
+          title="Document Details"
+          description="Please provide your KYC document numbers"
+        />
 
-      <div className="space-y-6">
-        <div>
+        <div className="space-y-5">
           <Input
             label="PAN Number"
             placeholder="AAAAA0000A"
@@ -54,9 +52,7 @@ export default function DocumentDetails({
             maxLength={10}
             required
           />
-        </div>
 
-        <div>
           <Input
             label="Aadhaar Number"
             placeholder="0000 0000 0000"
@@ -69,30 +65,34 @@ export default function DocumentDetails({
             maxLength={14}
             required
           />
-        </div>
 
-        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <svg
-              className="w-5 h-5 text-blue-600 mt-0.5"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <div>
-              <p className="text-sm font-medium text-blue-800">
-                Why do we need these documents?
-              </p>
-              <p className="text-sm text-blue-600 mt-1">
-                PAN and Aadhaar are mandatory for loan processing as per RBI
-                guidelines. Your information is securely stored and used only
-                for verification purposes.
-              </p>
+          {/* Info box — navy-tinted to match the premium theme */}
+          <div className="bg-navy/[0.04] border border-navy/10 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-navy/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg
+                  className="w-4 h-4 text-navy"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  Why do we need these documents?
+                </p>
+                <p className="text-sm text-slate-500 mt-1 leading-relaxed">
+                  PAN and Aadhaar are mandatory for loan processing as per RBI
+                  guidelines. Your information is securely stored and used only
+                  for verification purposes.
+                </p>
+              </div>
             </div>
           </div>
         </div>

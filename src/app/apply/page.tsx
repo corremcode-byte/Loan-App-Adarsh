@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import SiteHeader from '@/components/layout/SiteHeader';
 import PhoneVerification from '@/components/forms/PhoneVerification';
 import LoanTypeSelector from '@/components/forms/LoanTypeSelector';
 import PersonalDetails from '@/components/forms/PersonalDetails';
@@ -40,11 +40,13 @@ const initialFormData: ApplicationFormData = {
   employerName: '',
   monthlyIncome: 0,
   yearsOfExperience: 0,
+  hasExistingLoans: '',
   existingLoans: [],
   collateral: undefined,
   loanAmount: 0,
   loanPurpose: '',
-  preferredTenure: 12,
+  preferredTenure: 0,
+  interestRate: 12,
   expectedEMI: 0,
   cibilScore: 0,
 };
@@ -66,7 +68,6 @@ export default function ApplyPage() {
   const [formData, setFormData] = useState<ApplicationFormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [interestRate, setInterestRate] = useState(12);
   const [eligibilityResult, setEligibilityResult] = useState<EligibilityResultType | null>(null);
   const [showEligibility, setShowEligibility] = useState(false);
   const [slabRecommendation, setSlabRecommendation] = useState<SlabRecommendationResult | null>(null);
@@ -117,7 +118,7 @@ export default function ApplyPage() {
   // Scrolls to the first input that has a validation error after React re-renders.
   const scrollToFirstError = () => {
     setTimeout(() => {
-      const el = document.querySelector<HTMLElement>('.border-red-400');
+      const el = document.querySelector<HTMLElement>('[aria-invalid="true"]');
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         el.focus();
@@ -165,18 +166,34 @@ export default function ApplyPage() {
             : 'Monthly salary must be at least ₹35,000';
         if (formData.yearsOfExperience < 3)
           newErrors.yearsOfExperience = 'Minimum 3 years of experience required';
+        // Bugs 11/13: experience cannot exceed age-18 (the form's minimum working age)
+        if (formData.dateOfBirth) {
+          const dob = new Date(formData.dateOfBirth);
+          const today = new Date();
+          const age = Math.floor((today.getTime() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+          const maxExperience = Math.max(0, age - 18);
+          if (formData.yearsOfExperience > maxExperience) {
+            newErrors.yearsOfExperience = `Years of experience (${formData.yearsOfExperience}) cannot exceed ${maxExperience} years for someone aged ${age}`;
+          }
+        }
         if (!formData.cibilScore || formData.cibilScore < 700)
           newErrors.cibilScore = 'Minimum required CIBIL score is 700';
+        // Bug 14: user must explicitly select yes or no for existing loans
+        if (!formData.hasExistingLoans)
+          newErrors.hasExistingLoans = 'Please indicate whether you have existing loans';
         break;
 
-      case 'loan-details':
-        if (!formData.loanAmount || formData.loanAmount < 50000)
-          newErrors.loanAmount = 'Loan amount must be at least ₹50,000';
+      case 'loan-details': {
+        const minLoanAmount = formData.loanType === 'secured' ? 100000 : 50000;
+        const minLoanLabel = formData.loanType === 'secured' ? '₹1,00,000' : '₹50,000';
+        if (!formData.loanAmount || formData.loanAmount < minLoanAmount)
+          newErrors.loanAmount = `Loan amount must be at least ${minLoanLabel}`;
         if (!formData.loanPurpose) newErrors.loanPurpose = 'Loan purpose is required';
         if (!formData.preferredTenure) newErrors.preferredTenure = 'Tenure is required';
-        if (!interestRate || interestRate < 10.5)
+        if (!formData.interestRate || formData.interestRate < 10.5)
           newErrors.interestRate = 'Minimum expected interest rate is 10.5%';
         break;
+      }
     }
 
     // Validate collateral for secured loans
@@ -200,7 +217,7 @@ export default function ApplyPage() {
     }
 
     const stepKeys = steps.map((s) => s.key);
-    let nextIndex = currentStepIndex + 1;
+    const nextIndex = currentStepIndex + 1;
 
     // Skip collateral step for unsecured loans (it's embedded in financial step)
     while (nextIndex < stepKeys.length) {
@@ -340,6 +357,8 @@ export default function ApplyPage() {
                 existingLoans: formData.existingLoans as ExistingLoan[],
                 cibilScore: formData.cibilScore,
               }}
+              hasExistingLoans={formData.hasExistingLoans}
+              onHasExistingLoansChange={(value) => updateFormData('hasExistingLoans', value)}
               onChange={updateFormData}
               errors={errors}
             />
@@ -369,10 +388,10 @@ export default function ApplyPage() {
               loanAmount: formData.loanAmount,
               loanPurpose: formData.loanPurpose,
               preferredTenure: formData.preferredTenure,
-              interestRate,
+              interestRate: formData.interestRate,
             }}
             onChange={updateFormData}
-            onInterestRateChange={setInterestRate}
+            onInterestRateChange={(rate) => updateFormData('interestRate', rate)}
             onEMIChange={handleEMIChange}
             errors={errors}
             loanType={formData.loanType as 'secured' | 'unsecured'}
@@ -428,6 +447,29 @@ export default function ApplyPage() {
                             </div>
                           </div>
                         )}
+
+                        {/* Binding constraint explanation (Bug 12) */}
+                        {(() => {
+                          const { bindingConstraint, foirReason, ltiReason, turnoverReason, collateralReason, cibilReason, scoreReason } = slabRecommendation.reasoning;
+                          const constraintReasonMap: Record<string, string | null> = {
+                            FOIR: foirReason,
+                            LTI: ltiReason,
+                            Turnover: turnoverReason,
+                            Collateral: collateralReason,
+                            CIBIL: cibilReason,
+                            Score: scoreReason,
+                          };
+                          const constraintReason = constraintReasonMap[bindingConstraint];
+                          if (!constraintReason) return null;
+                          return (
+                            <div className="mb-4 p-3 bg-amber-100 rounded-lg border border-amber-200">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 mb-1">
+                                Why this amount? — {bindingConstraint} limit applied
+                              </p>
+                              <p className="text-xs text-amber-800">{constraintReason}</p>
+                            </div>
+                          );
+                        })()}
 
                         {slabRecommendation.improvementTips.length > 0 && (
                           <div>
@@ -542,8 +584,16 @@ export default function ApplyPage() {
                         <p className="font-semibold text-[#223265]">₹{formData.loanAmount.toLocaleString()}</p>
                       </div>
                       <div>
+                        <span className="text-slate-400">Purpose</span>
+                        <p className="font-medium text-[#1E293B] capitalize">{formData.loanPurpose.replace(/-/g, ' ')}</p>
+                      </div>
+                      <div>
                         <span className="text-slate-400">Tenure</span>
                         <p className="font-medium text-[#1E293B]">{formData.preferredTenure} months</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400">Interest Rate</span>
+                        <p className="font-medium text-[#1E293B]">{formData.interestRate}% p.a.</p>
                       </div>
                       <div>
                         <span className="text-slate-400">Expected EMI</span>
@@ -551,6 +601,35 @@ export default function ApplyPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Collateral Summary (secured loans only) */}
+                  {formData.loanType === 'secured' && formData.collateral && (
+                    <div className="rounded-xl p-5 border border-slate-200">
+                      <h3 className="text-sm font-semibold text-[#223265] uppercase tracking-wide mb-3">
+                        Collateral Details
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="text-slate-400">Property Type</span>
+                          <p className="font-medium text-[#1E293B] capitalize">{formData.collateral.propertyType}</p>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Estimated Value</span>
+                          <p className="font-medium text-[#1E293B]">₹{formData.collateral.estimatedValue.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Ownership</span>
+                          <p className="font-medium text-[#1E293B] capitalize">{formData.collateral.ownershipStatus.replace(/-/g, ' ')}</p>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Coverage vs Loan</span>
+                          <p className={`font-medium ${formData.collateral.estimatedValue >= formData.loanAmount ? 'text-green-700' : 'text-red-600'}`}>
+                            {formData.collateral.estimatedValue >= formData.loanAmount ? 'Sufficient' : 'Insufficient'} ({Math.round((formData.collateral.estimatedValue / formData.loanAmount) * 100)}%)
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-8 flex justify-center">
@@ -569,31 +648,15 @@ export default function ApplyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-10 h-10 bg-[#223265] rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <span className="text-xl font-bold text-[#1E293B]">LoanEase</span>
-            </Link>
-            <Link href="/emi-calculator" className="text-sm text-[#223265] hover:text-[#31437F] font-medium transition-colors">
-              EMI Calculator
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-surface">
+      <SiteHeader variant="apply" />
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Progress Steps */}
         {currentStep !== 'phone' && (
           <div className="mb-10">
-            <div className="flex items-center justify-between">
+            {/* Desktop stepper — full step indicators */}
+            <div className="hidden md:flex items-center justify-between">
               {steps.slice(1).map((step, index) => {
                 const stepIndex = index + 1;
                 const isCompleted = stepIndex < currentStepIndex;
@@ -609,10 +672,10 @@ export default function ApplyPage() {
                         disabled={!canNavigate}
                         className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
                           isCompleted
-                            ? 'bg-[#223265] text-white hover:bg-[#31437F] cursor-pointer shadow-sm'
+                            ? 'bg-navy text-white hover:bg-navy-hover cursor-pointer shadow-sm'
                             : isCurrent
-                            ? 'bg-[#223265] text-white cursor-default ring-4 ring-[#223265]/15'
-                            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                            ? 'bg-navy text-white cursor-default ring-2 ring-offset-2 ring-navy/60'
+                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                         }`}
                         title={canNavigate ? `Go back to ${step.label}` : ''}
                       >
@@ -628,9 +691,9 @@ export default function ApplyPage() {
                         onClick={() => canNavigate && setCurrentStep(step.key)}
                         className={`text-xs font-medium ${
                           isCurrent
-                            ? 'text-[#223265]'
+                            ? 'text-navy font-semibold'
                             : isCompleted
-                            ? 'text-[#223265]/60 cursor-pointer hover:text-[#223265]'
+                            ? 'text-navy/60 cursor-pointer hover:text-navy'
                             : 'text-slate-400'
                         }`}
                       >
@@ -640,13 +703,33 @@ export default function ApplyPage() {
                     {index < steps.length - 2 && (
                       <div
                         className={`flex-1 h-[2px] mx-1.5 rounded-full ${
-                          isCompleted ? 'bg-[#223265]' : 'bg-slate-200'
+                          isCompleted ? 'bg-navy' : 'bg-slate-200'
                         }`}
                       />
                     )}
                   </React.Fragment>
                 );
               })}
+            </div>
+
+            {/* Mobile stepper — compact "Step X of Y" + progress bar */}
+            <div className="md:hidden">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-sm font-semibold text-foreground">
+                  Step {currentStepIndex} of {steps.length - 1}
+                </span>
+                <span className="text-sm font-medium text-navy">
+                  {steps[currentStepIndex]?.label}
+                </span>
+              </div>
+              <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-navy rounded-full transition-all duration-300"
+                  style={{
+                    width: `${(currentStepIndex / (steps.length - 1)) * 100}%`,
+                  }}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -656,11 +739,11 @@ export default function ApplyPage() {
 
         {/* Navigation Buttons */}
         {!['phone', 'loan-type', 'review'].includes(currentStep) && (
-          <div className="flex justify-between mt-8 max-w-2xl mx-auto">
-            <Button variant="outline" onClick={handleBack}>
+          <div className="mt-8 max-w-2xl mx-auto border-t border-slate-100 pt-6 flex justify-between">
+            <Button variant="outline" size="lg" onClick={handleBack}>
               Back
             </Button>
-            <Button onClick={handleNext}>Continue</Button>
+            <Button size="lg" onClick={handleNext}>Continue</Button>
           </div>
         )}
       </main>

@@ -16,18 +16,19 @@ interface FinancialDetailsProps {
     existingLoans: ExistingLoan[];
     cibilScore: number;
   };
+  hasExistingLoans: 'yes' | 'no' | '';
+  onHasExistingLoansChange: (value: 'yes' | 'no') => void;
   onChange: (field: string, value: string | number | ExistingLoan[]) => void;
   errors?: Record<string, string>;
 }
 
 export default function FinancialDetails({
   data,
+  hasExistingLoans,
+  onHasExistingLoansChange,
   onChange,
   errors = {},
 }: FinancialDetailsProps) {
-  const [hasExistingLoans, setHasExistingLoans] = React.useState<'yes' | 'no' | ''>(() => {
-    return data.existingLoans.length > 0 ? 'yes' : '';
-  });
   const [loanCount, setLoanCount] = React.useState<number>(() => {
     return data.existingLoans.length || 0;
   });
@@ -364,10 +365,12 @@ export default function FinancialDetails({
             <div className="flex gap-4">
               <button
                 type="button"
-                onClick={() => setHasExistingLoans('no')}
+                onClick={() => onHasExistingLoansChange('no')}
                 className={`flex-1 py-3 px-4 rounded-lg border-2 font-medium transition-colors ${
                   hasExistingLoans === 'no'
                     ? 'border-blue-600 bg-blue-50 text-blue-700'
+                    : errors.hasExistingLoans
+                    ? 'border-red-400 hover:border-red-500 text-gray-700'
                     : 'border-gray-200 hover:border-gray-300 text-gray-700'
                 }`}
               >
@@ -375,16 +378,21 @@ export default function FinancialDetails({
               </button>
               <button
                 type="button"
-                onClick={() => setHasExistingLoans('yes')}
+                onClick={() => onHasExistingLoansChange('yes')}
                 className={`flex-1 py-3 px-4 rounded-lg border-2 font-medium transition-colors ${
                   hasExistingLoans === 'yes'
                     ? 'border-blue-600 bg-blue-50 text-blue-700'
+                    : errors.hasExistingLoans
+                    ? 'border-red-400 hover:border-red-500 text-gray-700'
                     : 'border-gray-200 hover:border-gray-300 text-gray-700'
                 }`}
               >
                 Yes
               </button>
             </div>
+            {errors.hasExistingLoans && (
+              <p className="mt-2 text-sm text-red-600">{errors.hasExistingLoans}</p>
+            )}
           </div>
 
           {hasExistingLoans === 'yes' && (

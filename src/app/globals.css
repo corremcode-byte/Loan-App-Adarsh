@@ -1,26 +1,52 @@
 @import "tailwindcss";
 
+/* ─── Tailwind v4 design tokens ───────────────────────────────────────────── */
+/* These register as Tailwind utilities: bg-navy, text-navy, border-gold, etc. */
+@theme {
+  /* Brand palette */
+  --color-navy:          #223265;
+  --color-navy-dark:     #162247;
+  --color-navy-hover:    #31437F;
+  --color-gold:          #F9BF4C;
+  --color-gold-dark:     #E2A92A;
+  --color-gold-light:    #FDE9B8;
+
+  /* Semantic surface / text */
+  --color-surface:       #F8FAFC;
+  --color-foreground:    #1E293B;
+
+  /* Semantic aliases (used directly in components) */
+  --color-primary:       #223265;
+  --color-primary-hover: #31437F;
+  --color-accent:        #F9BF4C;
+  --color-accent-hover:  #E2A92A;
+
+  /* Font */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue',
+               Arial, sans-serif;
+}
+
+/* ─── CSS custom properties (for plain CSS / var() usage) ─────────────────── */
 :root {
   --background: #F8FAFC;
   --foreground: #1E293B;
-  --navy: #223265;
-  --navy-dark: #162247;
+  --navy:       #223265;
+  --navy-dark:  #162247;
   --navy-hover: #31437F;
-  --gold: #F9BF4C;
-  --gold-dark: #E2A92A;
+  --gold:       #F9BF4C;
+  --gold-dark:  #E2A92A;
   --gold-light: #FDE9B8;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar */
+/* ─── Custom scrollbar ────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -39,14 +65,14 @@ body {
   background: #64748b;
 }
 
-/* Form input focus styles */
+/* ─── Form focus ──────────────────────────────────────────────────────────── */
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
 }
 
-/* Remove number input spinners */
+/* ─── Remove number input spinners ───────────────────────────────────────── */
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
@@ -57,7 +83,7 @@ input[type='number'] {
   -moz-appearance: textfield;
 }
 
-/* Page transition */
+/* ─── Page transition ─────────────────────────────────────────────────────── */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -73,10 +99,10 @@ input[type='number'] {
   animation: fadeIn 0.25s ease-out;
 }
 
-/* Skeleton loader shimmer */
+/* ─── Skeleton loader shimmer ─────────────────────────────────────────────── */
 @keyframes skeleton-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
 }
 
 .animate-skeleton {
@@ -84,20 +110,4 @@ input[type='number'] {
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.5s infinite;
   border-radius: 6px;
-}
-
-/* Progress step styles — navy brand */
-.step-active {
-  background-color: #223265;
-  color: white;
-}
-
-.step-completed {
-  background-color: #223265;
-  color: white;
-}
-
-.step-pending {
-  background-color: #e2e8f0;
-  color: #94a3b8;
 }
