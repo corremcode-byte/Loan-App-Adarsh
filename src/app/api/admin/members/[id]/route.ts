@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Admin from '@/models/Admin';
+import { requireAdminRole } from '@/lib/apiAuth';
 
 // DELETE /api/admin/members/[id] - Delete a team member
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminRole();
+  if (auth.error) return auth.error;
+
   try {
     await dbConnect();
 

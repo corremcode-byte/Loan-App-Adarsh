@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -16,6 +16,7 @@ import LoanDetails from '@/components/forms/LoanDetails';
 import EligibilityResult from '@/components/EligibilityResult';
 import { ApplicationFormData, Collateral, ExistingLoan, EligibilityResult as EligibilityResultType, FormStep } from '@/types';
 import { recommendLoanSlab, formatSlabAmount, SlabRecommendationResult } from '@/lib/loanSlabRecommendation';
+import { validateFormStep } from '@/lib/formValidation';
 
 const initialFormData: ApplicationFormData = {
   phoneNumber: '',
@@ -62,6 +63,183 @@ const steps: { key: FormStep; label: string }[] = [
   { key: 'review', label: 'Review' },
 ];
 
+// ── Draft persistence — Bug #27 ──────────────────────────────────────────────
+// Not persisted: isPhoneVerified (auth state), panNumber/aadhaarNumber
+// (government identity documents), expectedEMI (derived/calculated).
+
+const DRAFT_STORAGE_KEY = 'loanease_apply_draft';
+const DRAFT_VERSION = 'v1';
+const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+function saveDraft(formData: ApplicationFormData): void {
+  if (!formData.phoneNumber) return;
+  try {
+    sessionStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        _version: DRAFT_VERSION,
+        _savedAt: Date.now(),
+        phoneNumber:       formData.phoneNumber,
+        loanType:          formData.loanType,
+        firstName:         formData.firstName,
+        middleName:        formData.middleName,
+        lastName:          formData.lastName,
+        gender:            formData.gender,
+        dateOfBirth:       formData.dateOfBirth,
+        maritalStatus:     formData.maritalStatus,
+        email:             formData.email,
+        address:           { ...formData.address },
+        occupation:        formData.occupation,
+        employerName:      formData.employerName,
+        monthlyIncome:     formData.monthlyIncome,
+        yearsOfExperience: formData.yearsOfExperience,
+        hasExistingLoans:  formData.hasExistingLoans,
+        existingLoans:     formData.existingLoans.map((l) => ({ ...l })),
+        collateral:        formData.collateral ? { ...formData.collateral } : undefined,
+        loanAmount:        formData.loanAmount,
+        loanPurpose:       formData.loanPurpose,
+        preferredTenure:   formData.preferredTenure,
+        interestRate:      formData.interestRate,
+        cibilScore:        formData.cibilScore,
+      })
+    );
+  } catch {
+    // quota exceeded or storage unavailable — degrade silently
+  }
+}
+
+function loadDraft(): Partial<ApplicationFormData> | null {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+
+    const d = parsed as Record<string, unknown>;
+
+    if (d._version !== DRAFT_VERSION) {
+      sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+      return null;
+    }
+    if (typeof d._savedAt !== 'number' || Date.now() - d._savedAt > DRAFT_MAX_AGE_MS) {
+      sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+      return null;
+    }
+
+    // Per-field validators — invalid values fall back to initialFormData defaults
+    const str = (key: string, def = ''): string => {
+      const v = d[key];
+      return typeof v === 'string' ? v : def;
+    };
+    const safeNum = (key: string, def = 0): number => {
+      const v = d[key];
+      return typeof v === 'number' && isFinite(v) && v >= 0 ? v : def;
+    };
+    const oneOf = <T extends string>(key: string, allowed: readonly T[], def: T): T => {
+      const v = d[key];
+      return (allowed as readonly string[]).includes(v as string) ? (v as T) : def;
+    };
+
+    // Validate nested address object
+    const rawAddr = d.address;
+    let address = { ...initialFormData.address };
+    if (rawAddr && typeof rawAddr === 'object' && !Array.isArray(rawAddr)) {
+      const a = rawAddr as Record<string, unknown>;
+      address = {
+        street:  typeof a.street  === 'string' ? a.street  : '',
+        city:    typeof a.city    === 'string' ? a.city    : '',
+        state:   typeof a.state   === 'string' ? a.state   : '',
+        pincode: typeof a.pincode === 'string' ? a.pincode : '',
+      };
+    }
+
+    // Validate existingLoans array
+    const TENURE_VALUES = ['monthly', 'quarterly', 'half-yearly', 'yearly'] as const;
+    const existingLoans: ExistingLoan[] = Array.isArray(d.existingLoans)
+      ? d.existingLoans
+          .filter(
+            (item): item is Record<string, unknown> =>
+              item !== null && typeof item === 'object' && !Array.isArray(item)
+          )
+          .map((item) => ({
+            loanType: typeof item.loanType === 'string' ? item.loanType : '',
+            outstandingAmount:
+              typeof item.outstandingAmount === 'number' &&
+              isFinite(item.outstandingAmount) &&
+              item.outstandingAmount >= 0
+                ? item.outstandingAmount
+                : 0,
+            emi:
+              typeof item.emi === 'number' && isFinite(item.emi) && item.emi >= 0
+                ? item.emi
+                : 0,
+            tenure: (TENURE_VALUES as readonly string[]).includes(item.tenure as string)
+              ? (item.tenure as ExistingLoan['tenure'])
+              : 'monthly',
+          }))
+      : [];
+
+    // Validate optional collateral object
+    const rawCol = d.collateral;
+    let collateral: Collateral | undefined;
+    if (rawCol && typeof rawCol === 'object' && !Array.isArray(rawCol)) {
+      const c = rawCol as Record<string, unknown>;
+      const PROP_TYPES = ['residential', 'commercial', 'land', 'vehicle', 'gold', 'other'] as const;
+      const OWN_VALUES  = ['self-owned', 'co-owned', 'parental'] as const;
+      collateral = {
+        propertyType: (PROP_TYPES as readonly string[]).includes(c.propertyType as string)
+          ? (c.propertyType as Collateral['propertyType'])
+          : 'residential',
+        estimatedValue:
+          typeof c.estimatedValue === 'number' &&
+          isFinite(c.estimatedValue) &&
+          c.estimatedValue >= 0
+            ? c.estimatedValue
+            : 0,
+        ownershipStatus: (OWN_VALUES as readonly string[]).includes(c.ownershipStatus as string)
+          ? (c.ownershipStatus as Collateral['ownershipStatus'])
+          : 'self-owned',
+        propertyAddress: typeof c.propertyAddress === 'string' ? c.propertyAddress : '',
+      };
+    }
+
+    return {
+      phoneNumber:       str('phoneNumber'),
+      loanType:          oneOf('loanType',  ['secured', 'unsecured', ''] as const, '' as ApplicationFormData['loanType']),
+      firstName:         str('firstName'),
+      middleName:        str('middleName'),
+      lastName:          str('lastName'),
+      gender:            oneOf('gender', ['male', 'female', 'other', ''] as const, '' as ApplicationFormData['gender']),
+      dateOfBirth:       str('dateOfBirth'),
+      maritalStatus:     oneOf('maritalStatus', ['single', 'married', 'divorced', 'widowed', ''] as const, '' as ApplicationFormData['maritalStatus']),
+      email:             str('email'),
+      address,
+      occupation:        oneOf('occupation', ['salaried', 'self-employed', 'business', 'retired', ''] as const, '' as ApplicationFormData['occupation']),
+      employerName:      str('employerName'),
+      monthlyIncome:     safeNum('monthlyIncome'),
+      yearsOfExperience: safeNum('yearsOfExperience'),
+      hasExistingLoans:  oneOf('hasExistingLoans', ['yes', 'no', ''] as const, '' as ApplicationFormData['hasExistingLoans']),
+      existingLoans,
+      collateral,
+      loanAmount:        safeNum('loanAmount'),
+      loanPurpose:       str('loanPurpose'),
+      preferredTenure:   safeNum('preferredTenure'),
+      interestRate:      safeNum('interestRate', 12),
+      cibilScore:        safeNum('cibilScore'),
+    };
+  } catch {
+    try { sessionStorage.removeItem(DRAFT_STORAGE_KEY); } catch { /* noop */ }
+    return null;
+  }
+}
+
+function clearDraft(): void {
+  try {
+    sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+  } catch { /* noop */ }
+}
+
 export default function ApplyPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<FormStep>('phone');
@@ -71,6 +249,42 @@ export default function ApplyPage() {
   const [eligibilityResult, setEligibilityResult] = useState<EligibilityResultType | null>(null);
   const [showEligibility, setShowEligibility] = useState(false);
   const [slabRecommendation, setSlabRecommendation] = useState<SlabRecommendationResult | null>(null);
+
+  // Prevents the save effect from recreating the draft after a successful submission
+  const submittedRef = useRef(false);
+
+  // Restore draft on mount. sessionStorage is not available during SSR, so this
+  // runs only on the client after hydration.
+  useEffect(() => {
+    const draft = loadDraft();
+    if (!draft) return;
+    setFormData({
+      ...initialFormData,
+      ...draft,
+      // Excluded fields: always enforce defaults regardless of storage content
+      isPhoneVerified: false,
+      panNumber: initialFormData.panNumber,
+      aadhaarNumber: initialFormData.aadhaarNumber,
+      expectedEMI: initialFormData.expectedEMI,
+    } as ApplicationFormData);
+  }, []); // runs once on mount
+
+  // Persist allowed fields on every formData change, unless already submitted
+  useEffect(() => {
+    if (submittedRef.current) return;
+    saveDraft(formData);
+  }, [formData]);
+
+  // Warn before leaving a started, incomplete application
+  useEffect(() => {
+    if (!formData.phoneNumber) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [formData.phoneNumber]);
 
   const currentStepIndex = steps.findIndex((s) => s.key === currentStep);
 
@@ -127,85 +341,7 @@ export default function ApplyPage() {
   };
 
   const validateStep = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    switch (currentStep) {
-      case 'personal':
-        if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-        if (!formData.email.trim()) newErrors.email = 'Email is required';
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-          newErrors.email = 'Invalid email format';
-        if (!formData.gender) newErrors.gender = 'Please select gender';
-        if (!formData.dateOfBirth) newErrors.dateOfBirth = 'Date of birth is required';
-        if (!formData.maritalStatus) newErrors.maritalStatus = 'Please select marital status';
-        break;
-
-      case 'address':
-        if (!formData.address.street.trim()) newErrors.street = 'Street address is required';
-        if (!formData.address.city.trim()) newErrors.city = 'City is required';
-        if (!formData.address.state) newErrors.state = 'State is required';
-        if (!formData.address.pincode || formData.address.pincode.length !== 6)
-          newErrors.pincode = 'Valid 6-digit PIN code is required';
-        break;
-
-      case 'documents':
-        if (!formData.panNumber || formData.panNumber.length !== 10)
-          newErrors.panNumber = 'Valid 10-character PAN is required';
-        const aadhaar = formData.aadhaarNumber.replace(/\s/g, '');
-        if (!aadhaar || aadhaar.length !== 12)
-          newErrors.aadhaarNumber = 'Valid 12-digit Aadhaar is required';
-        break;
-
-      case 'financial':
-        if (!formData.occupation) newErrors.occupation = 'Occupation is required';
-        if (!formData.employerName.trim()) newErrors.employerName = 'Employer name is required';
-        if (!formData.monthlyIncome ||
-            formData.monthlyIncome < (formData.occupation === 'business' ? 833333 : 35000))
-          newErrors.monthlyIncome = formData.occupation === 'business'
-            ? 'Annual turnover must be at least ₹1,00,00,000 (1 Crore)'
-            : 'Monthly salary must be at least ₹35,000';
-        if (formData.yearsOfExperience < 3)
-          newErrors.yearsOfExperience = 'Minimum 3 years of experience required';
-        // Bugs 11/13: experience cannot exceed age-18 (the form's minimum working age)
-        if (formData.dateOfBirth) {
-          const dob = new Date(formData.dateOfBirth);
-          const today = new Date();
-          const age = Math.floor((today.getTime() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-          const maxExperience = Math.max(0, age - 18);
-          if (formData.yearsOfExperience > maxExperience) {
-            newErrors.yearsOfExperience = `Years of experience (${formData.yearsOfExperience}) cannot exceed ${maxExperience} years for someone aged ${age}`;
-          }
-        }
-        if (!formData.cibilScore || formData.cibilScore < 700)
-          newErrors.cibilScore = 'Minimum required CIBIL score is 700';
-        // Bug 14: user must explicitly select yes or no for existing loans
-        if (!formData.hasExistingLoans)
-          newErrors.hasExistingLoans = 'Please indicate whether you have existing loans';
-        break;
-
-      case 'loan-details': {
-        const minLoanAmount = formData.loanType === 'secured' ? 100000 : 50000;
-        const minLoanLabel = formData.loanType === 'secured' ? '₹1,00,000' : '₹50,000';
-        if (!formData.loanAmount || formData.loanAmount < minLoanAmount)
-          newErrors.loanAmount = `Loan amount must be at least ${minLoanLabel}`;
-        if (!formData.loanPurpose) newErrors.loanPurpose = 'Loan purpose is required';
-        if (!formData.preferredTenure) newErrors.preferredTenure = 'Tenure is required';
-        if (!formData.interestRate || formData.interestRate < 10.5)
-          newErrors.interestRate = 'Minimum expected interest rate is 10.5%';
-        break;
-      }
-    }
-
-    // Validate collateral for secured loans
-    if (currentStep === 'financial' && formData.loanType === 'secured') {
-      if (!formData.collateral?.propertyType) newErrors.propertyType = 'Property type is required';
-      if (!formData.collateral?.estimatedValue || formData.collateral.estimatedValue < 100000)
-        newErrors.estimatedValue = 'Valid estimated value is required';
-      if (!formData.collateral?.ownershipStatus) newErrors.ownershipStatus = 'Ownership status is required';
-      if (!formData.collateral?.propertyAddress?.trim())
-        newErrors.propertyAddress = 'Property address is required';
-    }
-
+    const newErrors = validateFormStep(currentStep, formData);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -266,6 +402,8 @@ export default function ApplyPage() {
       });
       const data = await response.json();
       if (data.success) {
+        submittedRef.current = true;
+        clearDraft();
         router.push('/thank-you');
       } else {
         alert('Failed to submit application. Please try again.');
@@ -550,19 +688,19 @@ export default function ApplyPage() {
                       Financial Information
                     </h3>
                     <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-slate-400">Occupation</span>
                         <p className="font-medium text-[#1E293B] capitalize">{formData.occupation}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-slate-400">Monthly Income</span>
-                        <p className="font-medium text-[#1E293B]">₹{formData.monthlyIncome.toLocaleString()}</p>
+                        <p className="font-medium text-[#1E293B] break-all">₹{formData.monthlyIncome.toLocaleString('en-IN')}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-slate-400">Experience</span>
                         <p className="font-medium text-[#1E293B]">{formData.yearsOfExperience} years</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-slate-400">Existing Loans</span>
                         <p className="font-medium text-[#1E293B]">{formData.existingLoans.length}</p>
                       </div>
@@ -575,29 +713,29 @@ export default function ApplyPage() {
                       Loan Details
                     </h3>
                     <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-slate-400">Type</span>
                         <p className="font-medium text-[#1E293B] capitalize">{formData.loanType}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-slate-400">Amount</span>
-                        <p className="font-semibold text-[#223265]">₹{formData.loanAmount.toLocaleString()}</p>
+                        <p className="font-semibold text-[#223265] break-all">₹{formData.loanAmount.toLocaleString('en-IN')}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-slate-400">Purpose</span>
                         <p className="font-medium text-[#1E293B] capitalize">{formData.loanPurpose.replace(/-/g, ' ')}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-slate-400">Tenure</span>
                         <p className="font-medium text-[#1E293B]">{formData.preferredTenure} months</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-slate-400">Interest Rate</span>
                         <p className="font-medium text-[#1E293B]">{formData.interestRate}% p.a.</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-slate-400">Expected EMI</span>
-                        <p className="font-semibold text-[#223265]">₹{formData.expectedEMI.toLocaleString()}</p>
+                        <p className="font-semibold text-[#223265] break-all">₹{formData.expectedEMI.toLocaleString('en-IN')}</p>
                       </div>
                     </div>
                   </div>
@@ -609,24 +747,30 @@ export default function ApplyPage() {
                         Collateral Details
                       </h3>
                       <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
+                        <div className="min-w-0">
                           <span className="text-slate-400">Property Type</span>
                           <p className="font-medium text-[#1E293B] capitalize">{formData.collateral.propertyType}</p>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <span className="text-slate-400">Estimated Value</span>
-                          <p className="font-medium text-[#1E293B]">₹{formData.collateral.estimatedValue.toLocaleString()}</p>
+                          <p className="font-medium text-[#1E293B] break-all">₹{formData.collateral.estimatedValue.toLocaleString('en-IN')}</p>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <span className="text-slate-400">Ownership</span>
                           <p className="font-medium text-[#1E293B] capitalize">{formData.collateral.ownershipStatus.replace(/-/g, ' ')}</p>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <span className="text-slate-400">Coverage vs Loan</span>
                           <p className={`font-medium ${formData.collateral.estimatedValue >= formData.loanAmount ? 'text-green-700' : 'text-red-600'}`}>
                             {formData.collateral.estimatedValue >= formData.loanAmount ? 'Sufficient' : 'Insufficient'} ({Math.round((formData.collateral.estimatedValue / formData.loanAmount) * 100)}%)
                           </p>
                         </div>
+                        {formData.collateral.propertyAddress && (
+                          <div className="col-span-2 min-w-0">
+                            <span className="text-slate-400">Property Address</span>
+                            <p className="font-medium text-[#1E293B] break-words">{formData.collateral.propertyAddress}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

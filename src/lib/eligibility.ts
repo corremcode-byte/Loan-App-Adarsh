@@ -1,5 +1,5 @@
 import { ApplicationFormData, EligibilityResult } from '@/types';
-import { calculateEMI } from './emi';
+import { calculateEMI, toMonthlyEMI } from './emi';
 
 interface StrategyResult {
   score: number;
@@ -15,7 +15,11 @@ interface StrategyResult {
  * Accept: DTI < 40%, Review: 40-50%, Reject: > 50%
  */
 function calculateDTI(data: ApplicationFormData): StrategyResult {
-  const existingEMIs = data.existingLoans.reduce((sum, loan) => sum + loan.emi, 0);
+  // AF-4: normalize each existing loan EMI to its monthly equivalent before summing
+  const existingEMIs = data.existingLoans.reduce(
+    (sum, loan) => sum + toMonthlyEMI(loan.emi, loan.tenure),
+    0
+  );
   const proposedEMI = data.expectedEMI || calculateEMI(data.loanAmount, 12, data.preferredTenure / 12).emi;
   const totalEMIs = existingEMIs + proposedEMI;
   const dti = (totalEMIs / data.monthlyIncome) * 100;
@@ -54,7 +58,11 @@ function calculateDTI(data: ApplicationFormData): StrategyResult {
  * Maximum 50% of income should go towards EMIs
  */
 function calculateFOIR(data: ApplicationFormData): StrategyResult {
-  const existingEMIs = data.existingLoans.reduce((sum, loan) => sum + loan.emi, 0);
+  // AF-4: normalize each existing loan EMI to its monthly equivalent before summing
+  const existingEMIs = data.existingLoans.reduce(
+    (sum, loan) => sum + toMonthlyEMI(loan.emi, loan.tenure),
+    0
+  );
   const proposedEMI = data.expectedEMI || calculateEMI(data.loanAmount, 12, data.preferredTenure / 12).emi;
   const totalObligations = existingEMIs + proposedEMI;
   const foir = (totalObligations / data.monthlyIncome) * 100;

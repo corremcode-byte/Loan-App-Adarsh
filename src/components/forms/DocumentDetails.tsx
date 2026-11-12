@@ -19,8 +19,8 @@ export default function DocumentDetails({
   errors = {},
 }: DocumentDetailsProps) {
   const formatPAN = (value: string) => {
-    // PAN format: AAAAA0000A (5 letters, 4 numbers, 1 letter)
-    return value.toUpperCase().slice(0, 10);
+    // Bug 18: strip non-alphanumeric chars first, then uppercase and trim to 10
+    return value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 10);
   };
 
   const formatAadhaar = (value: string) => {
