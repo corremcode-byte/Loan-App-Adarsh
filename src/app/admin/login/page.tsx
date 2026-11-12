@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { signIn } from 'next-auth/react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Logo from '@/components/layout/Logo';
@@ -20,19 +21,16 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+      const result = await signIn('credentials', {
+        username,
+        password,
+        redirect: false,
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        localStorage.setItem('adminUser', JSON.stringify(data.admin));
+      if (result?.ok) {
         router.push('/admin/dashboard');
       } else {
-        setError(data.error || 'Login failed');
+        setError('Invalid username or password');
       }
     } catch {
       setError('An error occurred. Please try again.');
@@ -185,15 +183,6 @@ export default function AdminLoginPage() {
                 </Button>
               </form>
 
-              {/* Demo credentials */}
-              <div className="mt-6 p-4 bg-navy/[0.04] border border-navy/10 rounded-xl">
-                <p className="text-xs font-semibold text-navy/50 uppercase tracking-widest mb-1.5">
-                  Demo Credentials
-                </p>
-                <p className="text-xs text-slate-600 font-mono">
-                  admin@mail.com &middot; admin12
-                </p>
-              </div>
             </div>
 
             {/* Back to Home — below the card */}

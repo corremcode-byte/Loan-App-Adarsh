@@ -79,7 +79,8 @@ export default function CollateralDetails({
           value={data.propertyAddress}
           onChange={(e) => onChange('propertyAddress', e.target.value)}
           error={errors.propertyAddress}
-          helperText="Full address where the collateral is located"
+          helperText="Full address where the collateral is located (max 500 characters)"
+          maxLength={500}
           required
         />
 

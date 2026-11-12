@@ -5,7 +5,7 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { CardTitle, CardDescription } from '@/components/ui/Card';
 import { ExistingLoan } from '@/types';
-import { formatCurrency } from '@/lib/emi';
+import { formatCurrency, toMonthlyEMI } from '@/lib/emi';
 
 interface FinancialDetailsProps {
   data: {
@@ -141,7 +141,11 @@ export default function FinancialDetails({
     }, 1200);
   };
 
-  const totalEMI = data.existingLoans.reduce((sum, loan) => sum + (loan.emi || 0), 0);
+  // AF-4: normalize to monthly equivalents so the display matches the eligibility calculation
+  const totalEMI = data.existingLoans.reduce(
+    (sum, loan) => sum + toMonthlyEMI(loan.emi || 0, loan.tenure),
+    0
+  );
 
   return (
     <div className="max-w-2xl mx-auto">

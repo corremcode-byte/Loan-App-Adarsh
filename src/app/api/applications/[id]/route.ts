@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Application from '@/models/Application';
+import { requireAdminRole } from '@/lib/apiAuth';
 
 // GET single application
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminRole();
+  if (auth.error) return auth.error;
+
   try {
     await dbConnect();
     const { id } = await params;
@@ -35,6 +39,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminRole();
+  if (auth.error) return auth.error;
+
   try {
     await dbConnect();
     const { id } = await params;
@@ -83,6 +90,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminRole();
+  if (auth.error) return auth.error;
+
   try {
     await dbConnect();
     const { id } = await params;

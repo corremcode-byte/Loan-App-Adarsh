@@ -3,9 +3,14 @@ import dbConnect from '@/lib/mongodb';
 import Application from '@/models/Application';
 import { calculateEligibility } from '@/lib/eligibility';
 import { calculateEMI } from '@/lib/emi';
+import { validateDOB } from '@/lib/dobValidation';
+import { requireAdminRole } from '@/lib/apiAuth';
 
 // GET all applications (for admin dashboard)
 export async function GET() {
+  const auth = await requireAdminRole();
+  if (auth.error) return auth.error;
+
   try {
     await dbConnect();
 
@@ -29,6 +34,14 @@ export async function POST(request: Request) {
     await dbConnect();
 
     const data = await request.json();
+
+    // Bug 20: server-side DOB validation (calendar-accurate)
+    if (data.dateOfBirth) {
+      const dobError = validateDOB(data.dateOfBirth);
+      if (dobError) {
+        return NextResponse.json({ error: dobError }, { status: 400 });
+      }
+    }
 
     // Bug 5: enforce type-specific loan minimums
     const minAmount = data.loanType === 'secured' ? 100000 : 50000;

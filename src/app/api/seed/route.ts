@@ -2,8 +2,15 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Admin from '@/models/Admin';
 
-// GET /api/seed - Seeds the database with a default admin user
+// GET /api/seed - Seeds the database with a default admin user (development only)
 export async function GET() {
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json(
+      { error: 'Seed endpoint is only available in development' },
+      { status: 503 }
+    );
+  }
+
   try {
     await dbConnect();
 
@@ -13,10 +20,6 @@ export async function GET() {
     if (existingAdmin) {
       return NextResponse.json({
         message: 'Admin user already exists',
-        credentials: {
-          username: 'admin@mail.com',
-          password: 'admin12',
-        },
       });
     }
 
@@ -32,11 +35,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      message: 'Admin user created successfully!',
-      credentials: {
-        username: 'admin@mail.com',
-        password: 'admin12',
-      },
+      message: 'Admin user created successfully',
     });
   } catch (error) {
     console.error('Error seeding admin:', error);
