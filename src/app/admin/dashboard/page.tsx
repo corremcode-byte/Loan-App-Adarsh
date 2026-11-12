@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -16,13 +17,6 @@ import {
   IndianRupee,
   SlidersHorizontal,
 } from 'lucide-react';
-
-interface AdminUser {
-  id: string;
-  username: string;
-  name: string;
-  role: string;
-}
 
 interface StatCardProps {
   label: string;
@@ -57,10 +51,14 @@ function StatCard({ label, value, icon, accentClass, iconBgClass, colSpanClass =
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
+  const { data: session, status } = useSession({
+    required: true,
+    onUnauthenticated() {
+      router.push('/admin/login');
+    },
+  });
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
-  const [authChecked, setAuthChecked] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -81,21 +79,10 @@ export default function AdminDashboard() {
   const [memberError, setMemberError] = useState('');
 
   useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem('adminUser');
-    if (storedUser) {
-      setAdminUser(JSON.parse(storedUser));
-      setAuthChecked(true);
-    } else {
-      router.push('/admin/login');
-    }
-  }, [router]);
-
-  useEffect(() => {
-    if (authChecked && adminUser) {
+    if (status === 'authenticated') {
       fetchApplications();
     }
-  }, [authChecked, adminUser]);
+  }, [status]);
 
   const fetchApplications = async () => {
     try {
@@ -128,8 +115,7 @@ export default function AdminDashboard() {
   };
 
   const handleSignOut = () => {
-    localStorage.removeItem('adminUser');
-    router.push('/admin/login');
+    signOut({ callbackUrl: '/admin/login' });
   };
 
   const fetchTeamMembers = async () => {
@@ -243,7 +229,7 @@ export default function AdminDashboard() {
       .reduce((sum, a) => sum + a.loanAmount, 0),
   };
 
-  if (!authChecked) {
+  if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#223265]"></div>
@@ -251,9 +237,6 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!adminUser) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -287,7 +270,7 @@ export default function AdminDashboard() {
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <span className="text-xs sm:text-sm text-gray-500 hidden md:inline">
-                Welcome, <span className="font-semibold text-gray-800">{adminUser.name}</span>
+                Welcome, <span className="font-semibold text-gray-800">{session?.user?.name}</span>
               </span>
               <Button
                 variant="outline"

@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Admin from '@/models/Admin';
+import { requireAdminRole } from '@/lib/apiAuth';
 
 // GET /api/admin/members - Get all team members
 export async function GET() {
+  const auth = await requireAdminRole();
+  if (auth.error) return auth.error;
+
   try {
     await dbConnect();
 
@@ -23,6 +27,9 @@ export async function GET() {
 
 // POST /api/admin/members - Add new team member
 export async function POST(request: Request) {
+  const auth = await requireAdminRole();
+  if (auth.error) return auth.error;
+
   try {
     await dbConnect();
 

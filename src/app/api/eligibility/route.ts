@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { calculateEligibility } from '@/lib/eligibility';
 import { ApplicationFormData } from '@/types';
+import { validateDOB } from '@/lib/dobValidation';
 
 // POST check eligibility
 export async function POST(request: Request) {
@@ -13,6 +14,14 @@ export async function POST(request: Request) {
         { error: 'Loan amount, monthly income, and tenure are required' },
         { status: 400 }
       );
+    }
+
+    // Bug 20: server-side DOB validation (calendar-accurate)
+    if (data.dateOfBirth) {
+      const dobError = validateDOB(data.dateOfBirth);
+      if (dobError) {
+        return NextResponse.json({ error: dobError }, { status: 400 });
+      }
     }
 
     // Bug 5: enforce type-specific loan minimums

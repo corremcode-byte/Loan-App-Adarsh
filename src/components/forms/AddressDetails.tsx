@@ -5,6 +5,7 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import StepHeader from '@/components/apply/StepHeader';
 import { Address } from '@/types';
+import { indianStates } from '@/lib/indiaData';
 
 interface AddressDetailsProps {
   data: Address;
@@ -17,44 +18,6 @@ export default function AddressDetails({
   onChange,
   errors = {},
 }: AddressDetailsProps) {
-  const indianStates = [
-    { value: 'andhra-pradesh', label: 'Andhra Pradesh' },
-    { value: 'arunachal-pradesh', label: 'Arunachal Pradesh' },
-    { value: 'assam', label: 'Assam' },
-    { value: 'bihar', label: 'Bihar' },
-    { value: 'chhattisgarh', label: 'Chhattisgarh' },
-    { value: 'goa', label: 'Goa' },
-    { value: 'gujarat', label: 'Gujarat' },
-    { value: 'haryana', label: 'Haryana' },
-    { value: 'himachal-pradesh', label: 'Himachal Pradesh' },
-    { value: 'jharkhand', label: 'Jharkhand' },
-    { value: 'karnataka', label: 'Karnataka' },
-    { value: 'kerala', label: 'Kerala' },
-    { value: 'madhya-pradesh', label: 'Madhya Pradesh' },
-    { value: 'maharashtra', label: 'Maharashtra' },
-    { value: 'manipur', label: 'Manipur' },
-    { value: 'meghalaya', label: 'Meghalaya' },
-    { value: 'mizoram', label: 'Mizoram' },
-    { value: 'nagaland', label: 'Nagaland' },
-    { value: 'odisha', label: 'Odisha' },
-    { value: 'punjab', label: 'Punjab' },
-    { value: 'rajasthan', label: 'Rajasthan' },
-    { value: 'sikkim', label: 'Sikkim' },
-    { value: 'tamil-nadu', label: 'Tamil Nadu' },
-    { value: 'telangana', label: 'Telangana' },
-    { value: 'tripura', label: 'Tripura' },
-    { value: 'uttar-pradesh', label: 'Uttar Pradesh' },
-    { value: 'uttarakhand', label: 'Uttarakhand' },
-    { value: 'west-bengal', label: 'West Bengal' },
-    { value: 'delhi', label: 'Delhi' },
-    { value: 'chandigarh', label: 'Chandigarh' },
-    { value: 'puducherry', label: 'Puducherry' },
-    { value: 'andaman-nicobar', label: 'Andaman & Nicobar Islands' },
-    { value: 'dadra-nagar-haveli-daman-diu', label: 'Dadra & Nagar Haveli and Daman & Diu' },
-    { value: 'jammu-kashmir', label: 'Jammu & Kashmir' },
-    { value: 'ladakh', label: 'Ladakh' },
-    { value: 'lakshadweep', label: 'Lakshadweep' },
-  ];
 
   return (
     <div className="max-w-2xl mx-auto">
