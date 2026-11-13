@@ -23,8 +23,19 @@ const ADDRESS_PATTERN = /^[\p{L}\p{M}\d\s,\-.#&'()/]+$/u;
 // \p{M} included for the same reason as NAME_PATTERN. Ampersand for "Daman & Diu".
 const CITY_PATTERN = /^[\p{L}\p{M}\s\-.&]+$/u;
 
-// Bug 19: Maximum collateral address length.
-const COLLATERAL_ADDRESS_MAX_LENGTH = 500;
+// Rule: address fields (residential street, city, collateral property address) max 150 chars.
+const COLLATERAL_ADDRESS_MAX_LENGTH = 150;
+const STREET_MAX_LENGTH = 150;
+const CITY_MAX_LENGTH = 150;
+
+// Rule: name fields max 25 characters each.
+const NAME_MAX_LENGTH = 25;
+
+// Rule: monthly income max ₹5 crore (annual turnover equivalent: ₹60 crore).
+const MAX_MONTHLY_INCOME = 5_00_00_000;
+
+// Rule: loan amount max ₹100 crore.
+const MAX_LOAN_AMOUNT = 1_00_00_00_000;
 
 // ─── Main validation function ────────────────────────────────────────────────
 
@@ -40,21 +51,31 @@ export function validateFormStep(
 
   switch (step) {
     case 'personal': {
-      // Bug 16: firstName required + character validation
+      // Bug 16: firstName required + character validation + max 25 chars
       if (!formData.firstName.trim()) {
         errors.firstName = 'First name is required';
+      } else if (formData.firstName.trim().length > NAME_MAX_LENGTH) {
+        errors.firstName = `First name must be ${NAME_MAX_LENGTH} characters or fewer`;
       } else if (!NAME_PATTERN.test(formData.firstName.trim())) {
         errors.firstName = 'First name can only contain letters, spaces, hyphens, and apostrophes';
       }
 
-      // Bug 16: lastName — optional field but must be valid if provided
-      if (formData.lastName.trim() && !NAME_PATTERN.test(formData.lastName.trim())) {
-        errors.lastName = 'Last name can only contain letters, spaces, hyphens, and apostrophes';
+      // Bug 16: lastName — optional field but must be valid if provided, max 25 chars
+      if (formData.lastName.trim()) {
+        if (formData.lastName.trim().length > NAME_MAX_LENGTH) {
+          errors.lastName = `Last name must be ${NAME_MAX_LENGTH} characters or fewer`;
+        } else if (!NAME_PATTERN.test(formData.lastName.trim())) {
+          errors.lastName = 'Last name can only contain letters, spaces, hyphens, and apostrophes';
+        }
       }
 
-      // Bug 16: middleName — optional field but must be valid if provided
-      if (formData.middleName.trim() && !NAME_PATTERN.test(formData.middleName.trim())) {
-        errors.middleName = 'Middle name can only contain letters, spaces, hyphens, and apostrophes';
+      // Bug 16: middleName — optional field but must be valid if provided, max 25 chars
+      if (formData.middleName.trim()) {
+        if (formData.middleName.trim().length > NAME_MAX_LENGTH) {
+          errors.middleName = `Middle name must be ${NAME_MAX_LENGTH} characters or fewer`;
+        } else if (!NAME_PATTERN.test(formData.middleName.trim())) {
+          errors.middleName = 'Middle name can only contain letters, spaces, hyphens, and apostrophes';
+        }
       }
 
       if (!formData.email.trim()) {
@@ -78,16 +99,20 @@ export function validateFormStep(
     }
 
     case 'address': {
-      // Bug 17: street character validation
+      // Bug 17: street character validation + max 150 chars
       if (!formData.address.street.trim()) {
         errors.street = 'Street address is required';
+      } else if (formData.address.street.trim().length > STREET_MAX_LENGTH) {
+        errors.street = `Street address must be ${STREET_MAX_LENGTH} characters or fewer`;
       } else if (!ADDRESS_PATTERN.test(formData.address.street.trim())) {
         errors.street = 'Street address contains invalid characters';
       }
 
-      // Bug 17: city character validation
+      // Bug 17: city character validation + max 150 chars
       if (!formData.address.city.trim()) {
         errors.city = 'City is required';
+      } else if (formData.address.city.trim().length > CITY_MAX_LENGTH) {
+        errors.city = `City name must be ${CITY_MAX_LENGTH} characters or fewer`;
       } else if (!CITY_PATTERN.test(formData.address.city.trim())) {
         errors.city = 'City name can only contain letters, spaces, and hyphens';
       }
@@ -127,6 +152,11 @@ export function validateFormStep(
           formData.occupation === 'business'
             ? 'Annual turnover must be at least ₹1,00,00,000 (1 Crore)'
             : 'Monthly salary must be at least ₹35,000';
+      } else if (formData.monthlyIncome > MAX_MONTHLY_INCOME) {
+        errors.monthlyIncome =
+          formData.occupation === 'business'
+            ? 'Annual turnover must not exceed ₹60,00,00,000 (60 Crore)'
+            : 'Monthly salary must not exceed ₹5,00,00,000 (5 Crore)';
       }
 
       if (formData.yearsOfExperience < 3) {
@@ -179,11 +209,13 @@ export function validateFormStep(
     }
 
     case 'loan-details': {
-      // Bug 5: enforce minimum loan amounts
+      // Bug 5: enforce minimum loan amounts + spec maximum ₹100 crore
       const minLoanAmount = formData.loanType === 'secured' ? 100000 : 50000;
       const minLoanLabel = formData.loanType === 'secured' ? '₹1,00,000' : '₹50,000';
       if (!formData.loanAmount || formData.loanAmount < minLoanAmount) {
         errors.loanAmount = `Loan amount must be at least ${minLoanLabel}`;
+      } else if (formData.loanAmount > MAX_LOAN_AMOUNT) {
+        errors.loanAmount = 'Loan amount must not exceed ₹1,00,00,00,000 (100 Crore)';
       }
 
       if (!formData.loanPurpose) errors.loanPurpose = 'Loan purpose is required';

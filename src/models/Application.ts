@@ -74,8 +74,8 @@ export interface IApplication extends Document {
 
 const ExistingLoanSchema = new Schema<IExistingLoan>({
   loanType: { type: String, required: true },
-  outstandingAmount: { type: Number, required: true },
-  emi: { type: Number, required: true },
+  outstandingAmount: { type: Number, required: true, min: 0 },
+  emi: { type: Number, required: true, min: 0 },
 });
 
 const CollateralSchema = new Schema<ICollateral>({
@@ -84,18 +84,18 @@ const CollateralSchema = new Schema<ICollateral>({
     enum: ['residential', 'commercial', 'land', 'vehicle', 'gold', 'other'],
     required: true,
   },
-  estimatedValue: { type: Number, required: true },
+  estimatedValue: { type: Number, required: true, min: 0 },
   ownershipStatus: {
     type: String,
     enum: ['self-owned', 'co-owned', 'parental'],
     required: true,
   },
-  propertyAddress: { type: String, required: true },
+  propertyAddress: { type: String, required: true, maxlength: 150 },
 });
 
 const AddressSchema = new Schema<IAddress>({
-  street: { type: String, required: true },
-  city: { type: String, required: true },
+  street: { type: String, required: true, maxlength: 150 },
+  city: { type: String, required: true, maxlength: 150 },
   state: { type: String, required: true },
   pincode: { type: String, required: true },
 });
@@ -111,9 +111,9 @@ const ApplicationSchema = new Schema<IApplication>(
     },
 
     // Personal Details
-    firstName: { type: String, required: true },
-    middleName: { type: String, default: '' },
-    lastName: { type: String, default: '' },
+    firstName: { type: String, required: true, maxlength: 25 },
+    middleName: { type: String, default: '', maxlength: 25 },
+    lastName: { type: String, default: '', maxlength: 25 },
     gender: {
       type: String,
       enum: ['male', 'female', 'other'],
@@ -141,7 +141,7 @@ const ApplicationSchema = new Schema<IApplication>(
       required: true,
     },
     employerName: { type: String, required: true },
-    monthlyIncome: { type: Number, required: true },
+    monthlyIncome: { type: Number, required: true, max: 5_00_00_000 },
     yearsOfExperience: { type: Number, required: true },
 
     // Loan History
@@ -151,7 +151,7 @@ const ApplicationSchema = new Schema<IApplication>(
     collateral: { type: CollateralSchema },
 
     // Loan Request
-    loanAmount: { type: Number, required: true },
+    loanAmount: { type: Number, required: true, max: 1_00_00_00_000 },
     loanPurpose: { type: String, required: true },
     preferredTenure: { type: Number, required: true },
     interestRate: { type: Number, default: 12 },

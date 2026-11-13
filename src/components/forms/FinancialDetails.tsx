@@ -34,12 +34,31 @@ export default function FinancialDetails({
   });
 
   // Local display state for business annual turnover.
-  // The parent stores the monthly equivalent (annualTurnover / 12) in monthlyIncome.
+  // The parent stores the monthly equivalent (Math.ceil(annualTurnover / 12)) in monthlyIncome.
   const [annualTurnover, setAnnualTurnover] = React.useState<number>(() => {
     return data.occupation === 'business' && data.monthlyIncome > 0
       ? data.monthlyIncome * 12
       : 0;
   });
+
+  // Raw-string display states — allow intermediate/invalid input without corrupting form state.
+  // Pattern: type="text" + inputMode="numeric"; only /^\d+$/ strings update parent form state.
+  const [rawTurnover, setRawTurnover] = React.useState<string>(() =>
+    data.occupation === 'business' && data.monthlyIncome > 0
+      ? String(data.monthlyIncome * 12)
+      : ''
+  );
+  const [rawMonthlyIncome, setRawMonthlyIncome] = React.useState<string>(() =>
+    data.occupation !== 'business' && data.monthlyIncome > 0
+      ? String(data.monthlyIncome)
+      : ''
+  );
+  const [rawExperience, setRawExperience] = React.useState<string>(() =>
+    data.yearsOfExperience > 0 ? String(data.yearsOfExperience) : ''
+  );
+  const [rawCibil, setRawCibil] = React.useState<string>(() =>
+    data.cibilScore > 0 ? String(data.cibilScore) : ''
+  );
 
   // GSTIN verification — local UI state only, no API integration yet.
   const [gstinNumber, setGstinNumber] = React.useState('');
@@ -79,6 +98,8 @@ export default function FinancialDetails({
     if (data.occupation !== prevOccupationRef.current) {
       prevOccupationRef.current = data.occupation;
       setAnnualTurnover(0);
+      setRawTurnover('');
+      setRawMonthlyIncome('');
       onChange('monthlyIncome', 0);
       setGstinNumber('');
       setGstinVerified(false);
@@ -301,14 +322,31 @@ export default function FinancialDetails({
           {data.occupation === 'business' ? (
             <Input
               label="Annual Turnover"
-              type="number"
+              type="text"
+              inputMode="numeric"
               placeholder="Enter annual turnover"
-              value={annualTurnover || ''}
+              value={rawTurnover}
               onChange={(e) => {
-                const val = parseInt(e.target.value) || 0;
-                setAnnualTurnover(val);
-                // Store the monthly equivalent so eligibility calculations work correctly
-                onChange('monthlyIncome', Math.round(val / 12));
+                const raw = e.target.value;
+                setRawTurnover(raw);
+                if (raw === '') {
+                  setAnnualTurnover(0);
+                  onChange('monthlyIncome', 0);
+                  return;
+                }
+                if (/^\d+$/.test(raw)) {
+                  const n = Number(raw);
+                  if (Number.isFinite(n)) {
+                    setAnnualTurnover(n);
+                    // Math.ceil preserves ₹60Cr / ₹5Cr monthly boundary (no rounding-down slippage)
+                    onChange('monthlyIncome', Math.ceil(n / 12));
+                  }
+                }
+              }}
+              onBlur={() => {
+                if (rawTurnover !== '' && !/^\d+$/.test(rawTurnover)) {
+                  setRawTurnover(annualTurnover > 0 ? String(annualTurnover) : '');
+                }
               }}
               error={errors.monthlyIncome}
               helperText="Annual business turnover in INR (minimum ₹1,00,00,000)"
@@ -317,16 +355,28 @@ export default function FinancialDetails({
           ) : (
             <Input
               label={data.occupation === 'salaried' ? 'Monthly Salary' : 'Monthly Income'}
-              type="number"
+              type="text"
+              inputMode="numeric"
               placeholder={
                 data.occupation === 'salaried'
                   ? 'Enter monthly salary'
                   : 'Enter monthly income'
               }
-              value={data.monthlyIncome || ''}
-              onChange={(e) =>
-                onChange('monthlyIncome', parseInt(e.target.value) || 0)
-              }
+              value={rawMonthlyIncome}
+              onChange={(e) => {
+                const raw = e.target.value;
+                setRawMonthlyIncome(raw);
+                if (raw === '') { onChange('monthlyIncome', 0); return; }
+                if (/^\d+$/.test(raw)) {
+                  const n = Number(raw);
+                  if (Number.isFinite(n)) onChange('monthlyIncome', n);
+                }
+              }}
+              onBlur={() => {
+                if (rawMonthlyIncome !== '' && !/^\d+$/.test(rawMonthlyIncome)) {
+                  setRawMonthlyIncome(data.monthlyIncome > 0 ? String(data.monthlyIncome) : '');
+                }
+              }}
               error={errors.monthlyIncome}
               helperText={
                 data.occupation === 'salaried'
@@ -339,19 +389,30 @@ export default function FinancialDetails({
 
           <Input
             label="Years of Experience"
-            type="number"
+            type="text"
+            inputMode="numeric"
             placeholder="Enter years"
-            value={data.yearsOfExperience || ''}
-            onChange={(e) =>
-              onChange('yearsOfExperience', parseInt(e.target.value) || 0)
-            }
+            value={rawExperience}
+            onChange={(e) => {
+              const raw = e.target.value;
+              setRawExperience(raw);
+              if (raw === '') { onChange('yearsOfExperience', 0); return; }
+              if (/^\d+$/.test(raw)) {
+                const n = Number(raw);
+                if (Number.isFinite(n)) onChange('yearsOfExperience', n);
+              }
+            }}
+            onBlur={() => {
+              if (rawExperience !== '' && !/^\d+$/.test(rawExperience)) {
+                setRawExperience(data.yearsOfExperience > 0 ? String(data.yearsOfExperience) : '');
+              }
+            }}
             error={errors.yearsOfExperience}
             helperText={
               data.occupation === 'business'
                 ? 'Years in business (minimum 3)'
                 : 'Total work experience (minimum 3 years)'
             }
-            min={0}
             required
           />
         </div>
@@ -472,32 +533,36 @@ export default function FinancialDetails({
                         </label>
                         <Input
                           id={`outstanding-amount-${index}`}
-                          type="number"
+                          type="text"
+                          inputMode="numeric"
                           placeholder="Enter amount"
-                          value={loan.outstandingAmount || ''}
-                          onChange={(e) =>
-                            handleLoanUpdate(
-                              index,
-                              'outstandingAmount',
-                              parseInt(e.target.value) || 0
-                            )
-                          }
+                          value={loan.outstandingAmount > 0 ? String(loan.outstandingAmount) : ''}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            if (raw === '') { handleLoanUpdate(index, 'outstandingAmount', 0); return; }
+                            if (/^\d+$/.test(raw)) {
+                              const n = Number(raw);
+                              if (Number.isFinite(n)) handleLoanUpdate(index, 'outstandingAmount', n);
+                            }
+                          }}
                           required
                         />
                       </div>
 
                       <Input
                         label="EMI Amount"
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         placeholder="Enter EMI"
-                        value={loan.emi || ''}
-                        onChange={(e) =>
-                          handleLoanUpdate(
-                            index,
-                            'emi',
-                            parseInt(e.target.value) || 0
-                          )
-                        }
+                        value={loan.emi > 0 ? String(loan.emi) : ''}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === '') { handleLoanUpdate(index, 'emi', 0); return; }
+                          if (/^\d+$/.test(raw)) {
+                            const n = Number(raw);
+                            if (Number.isFinite(n)) handleLoanUpdate(index, 'emi', n);
+                          }
+                        }}
                         required
                       />
                       <Select
@@ -563,17 +628,25 @@ export default function FinancialDetails({
 
           <Input
             label="CIBIL Score"
-            type="number"
+            type="text"
+            inputMode="numeric"
             placeholder="Enter your CIBIL score (300–900)"
-            value={data.cibilScore || ''}
+            value={rawCibil}
             onChange={(e) => {
-              const val = parseInt(e.target.value) || 0;
-              onChange('cibilScore', val > 900 ? 900 : val);
+              const raw = e.target.value;
+              setRawCibil(raw);
+              if (raw === '') { onChange('cibilScore', 0); return; }
+              if (/^\d+$/.test(raw)) {
+                const n = Number(raw);
+                if (Number.isFinite(n)) onChange('cibilScore', n > 900 ? 900 : n);
+              }
+            }}
+            onBlur={() => {
+              // Snap display to actual capped form value on blur
+              setRawCibil(data.cibilScore > 0 ? String(data.cibilScore) : '');
             }}
             error={errors.cibilScore}
             helperText="Your credit score from CIBIL, ranges from 300 to 900"
-            min={300}
-            max={900}
             required
           />
 

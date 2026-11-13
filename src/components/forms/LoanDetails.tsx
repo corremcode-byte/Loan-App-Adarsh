@@ -36,6 +36,12 @@ export default function LoanDetails({
     data.interestRate > 0 ? String(data.interestRate) : ''
   );
 
+  // Raw-string state for loan amount — type="text" ensures browser never normalises the value.
+  // /^\d+$/ rejects scientific notation, decimals, and negatives without corrupting form state.
+  const [rawLoanAmount, setRawLoanAmount] = useState<string>(
+    data.loanAmount > 0 ? String(data.loanAmount) : ''
+  );
+
   const purposeOptions = [
     { value: 'home-purchase', label: 'Home Purchase' },
     { value: 'home-renovation', label: 'Home Renovation' },
@@ -111,12 +117,24 @@ export default function LoanDetails({
       <div className="space-y-6">
         <Input
           label="Loan Amount"
-          type="number"
+          type="text"
+          inputMode="numeric"
           placeholder="Enter loan amount in INR"
-          value={data.loanAmount || ''}
-          onChange={(e) =>
-            onChange('loanAmount', parseInt(e.target.value) || 0)
-          }
+          value={rawLoanAmount}
+          onChange={(e) => {
+            const raw = e.target.value;
+            setRawLoanAmount(raw);
+            if (raw === '') { onChange('loanAmount', 0); return; }
+            if (/^\d+$/.test(raw)) {
+              const n = Number(raw);
+              if (Number.isFinite(n)) onChange('loanAmount', n);
+            }
+          }}
+          onBlur={() => {
+            if (rawLoanAmount !== '' && !/^\d+$/.test(rawLoanAmount)) {
+              setRawLoanAmount(data.loanAmount > 0 ? String(data.loanAmount) : '');
+            }
+          }}
           error={errors.loanAmount}
           helperText={
             loanType === 'secured'
