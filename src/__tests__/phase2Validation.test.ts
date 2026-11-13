@@ -120,38 +120,36 @@ describe('Bug 20 — validateDOB', () => {
     expect(error).toMatch(/cannot be today|future/i);
   });
 
-  it('rejects a date that produces age < 18 (yesterday = 1 day old)', () => {
+  it('rejects a date that produces age < 24 (yesterday = 1 day old)', () => {
     const error = validateDOB(relativeDate(-1));
-    expect(error).toMatch(/at least 18/i);
+    expect(error).toMatch(/at least 24/i);
   });
 
-  it('rejects a person who turns 18 tomorrow (age = 17)', () => {
-    // 18 years old tomorrow means DOB = today - 18 years + 1 day
+  it('rejects a person who turns 24 tomorrow (age = 23)', () => {
+    // 24 years old tomorrow means DOB = today - 24 years + 1 day
     const d = new Date();
-    d.setFullYear(d.getFullYear() - 18);
+    d.setFullYear(d.getFullYear() - 24);
     d.setDate(d.getDate() + 1); // birthday is tomorrow
     const dobStr = d.toISOString().split('T')[0];
     const error = validateDOB(dobStr);
-    expect(error).toMatch(/at least 18/i);
+    expect(error).toMatch(/at least 24/i);
   });
 
-  it('accepts a person born exactly 18 years ago today', () => {
-    expect(validateDOB(dobExactlyAged(18))).toBeNull();
+  it('accepts a person born exactly 24 years ago today', () => {
+    expect(validateDOB(dobExactlyAged(24))).toBeNull();
   });
 
   it('accepts a person aged 30', () => {
     expect(validateDOB(dobExactlyAged(30))).toBeNull();
   });
 
-  it('accepts a person aged exactly 70', () => {
-    expect(validateDOB(dobExactlyAged(70))).toBeNull();
+  it('accepts a person aged exactly 110', () => {
+    expect(validateDOB(dobExactlyAged(110))).toBeNull();
   });
 
-  it('rejects a person aged > 70 (BUSINESS_DECISION: confirm max age)', () => {
-    // This test asserts the current implementation which uses 70 as max.
-    // Update if the business confirms a different limit.
-    const error = validateDOB(dobExactlyAged(71));
-    expect(error).toMatch(/maximum of 70/i);
+  it('rejects a person aged > 110 (maximum applicant age is 110)', () => {
+    const error = validateDOB(dobExactlyAged(111));
+    expect(error).toMatch(/maximum of 110/i);
   });
 
   it('rejects an invalid calendar date (Feb 30)', () => {
@@ -170,13 +168,13 @@ describe('Bug 20 — personal step DOB validation via validateFormStep', () => {
     expect(errors.dateOfBirth).toBeTruthy();
   });
 
-  it('rejects DOB that makes applicant under 18', () => {
-    const errors = validateFormStep('personal', base({ dateOfBirth: dobExactlyAged(17) }));
-    expect(errors.dateOfBirth).toMatch(/at least 18/i);
+  it('rejects DOB that makes applicant under 24', () => {
+    const errors = validateFormStep('personal', base({ dateOfBirth: dobExactlyAged(23) }));
+    expect(errors.dateOfBirth).toMatch(/at least 24/i);
   });
 
-  it('accepts DOB that makes applicant exactly 18', () => {
-    const errors = validateFormStep('personal', base({ dateOfBirth: dobExactlyAged(18) }));
+  it('accepts DOB that makes applicant exactly 24', () => {
+    const errors = validateFormStep('personal', base({ dateOfBirth: dobExactlyAged(24) }));
     expect(errors.dateOfBirth).toBeUndefined();
   });
 
@@ -378,18 +376,18 @@ describe('Bug 19 — Collateral address validation', () => {
     expect(errors.propertyAddress).toBeTruthy();
   });
 
-  it('rejects an address exceeding 500 characters', () => {
-    const longAddress = 'A'.repeat(501);
+  it('rejects an address exceeding 150 characters', () => {
+    const longAddress = 'A'.repeat(151);
     const errors = validateFormStep('financial', securedBase({
       collateral: { ...securedBase().collateral!, propertyAddress: longAddress },
     }));
-    expect(errors.propertyAddress).toMatch(/500/);
+    expect(errors.propertyAddress).toMatch(/150/);
   });
 
-  it('accepts an address exactly 500 characters long', () => {
-    const address500 = 'A'.repeat(500);
+  it('accepts an address exactly 150 characters long', () => {
+    const address150 = 'A'.repeat(150);
     const errors = validateFormStep('financial', securedBase({
-      collateral: { ...securedBase().collateral!, propertyAddress: address500 },
+      collateral: { ...securedBase().collateral!, propertyAddress: address150 },
     }));
     expect(errors.propertyAddress).toBeUndefined();
   });

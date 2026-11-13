@@ -1,10 +1,5 @@
-// Minimum age derived from existing product rules (PersonalDetails.tsx uses 18).
-const MIN_AGE_YEARS = 18;
-
-// BUSINESS_DECISION: Maximum applicant age is currently set to 70, following the
-// existing UI constraint in PersonalDetails.tsx (minDate = today - 70 years).
-// Confirm whether 70 is the intended maximum or if a different limit applies.
-const MAX_AGE_YEARS = 70;
+const MIN_AGE_YEARS = 24;
+const MAX_AGE_YEARS = 110;
 
 /**
  * Parses a YYYY-MM-DD date string as a LOCAL calendar date (not UTC).
@@ -43,8 +38,8 @@ export function calendarAge(dob: Date, referenceDate: Date): number {
  * Rules enforced:
  *   - Must be a parseable YYYY-MM-DD calendar date
  *   - Must not be today or any future date
- *   - Age must be >= MIN_AGE_YEARS (18)
- *   - Age must be <= MAX_AGE_YEARS (70 — see BUSINESS_DECISION note above)
+ *   - Age must be >= MIN_AGE_YEARS (24)
+ *   - Age must be <= MAX_AGE_YEARS (110)
  */
 export function validateDOB(dobString: string): string | null {
   if (!dobString) return 'Date of birth is required';
@@ -66,7 +61,6 @@ export function validateDOB(dobString: string): string | null {
   }
 
   if (age > MAX_AGE_YEARS) {
-    // BUSINESS_DECISION: confirm whether 70 is the intended maximum age.
     return `Applicant age exceeds the maximum of ${MAX_AGE_YEARS} years`;
   }
 

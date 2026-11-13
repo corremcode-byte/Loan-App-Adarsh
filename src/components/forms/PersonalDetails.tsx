@@ -37,22 +37,23 @@ export default function PersonalDetails({
     { value: 'widowed', label: 'Widowed' },
   ];
 
-  // Calculate max date (18 years ago) and min date (70 years ago)
+  // Format a local Date as YYYY-MM-DD without converting to UTC (avoids off-by-one for UTC+N).
+  const toLocalDateString = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  // Max DOB = 24 years ago (minimum applicant age).
+  // Min DOB = 110 years ago (maximum applicant age).
   const today = new Date();
-  const maxDate = new Date(
-    today.getFullYear() - 18,
-    today.getMonth(),
-    today.getDate()
-  )
-    .toISOString()
-    .split('T')[0];
-  const minDate = new Date(
-    today.getFullYear() - 70,
-    today.getMonth(),
-    today.getDate()
-  )
-    .toISOString()
-    .split('T')[0];
+  const maxDate = toLocalDateString(
+    new Date(today.getFullYear() - 24, today.getMonth(), today.getDate())
+  );
+  const minDate = toLocalDateString(
+    new Date(today.getFullYear() - 110, today.getMonth(), today.getDate())
+  );
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -71,6 +72,7 @@ export default function PersonalDetails({
               value={data.firstName}
               onChange={(e) => onChange('firstName', e.target.value)}
               error={errors.firstName}
+              maxLength={25}
               required
             />
             <Input
@@ -79,6 +81,7 @@ export default function PersonalDetails({
               value={data.middleName}
               onChange={(e) => onChange('middleName', e.target.value)}
               error={errors.middleName}
+              maxLength={25}
             />
             <Input
               label="Last Name"
@@ -86,6 +89,7 @@ export default function PersonalDetails({
               value={data.lastName}
               onChange={(e) => onChange('lastName', e.target.value)}
               error={errors.lastName}
+              maxLength={25}
             />
           </div>
 

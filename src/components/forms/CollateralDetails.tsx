@@ -17,6 +17,11 @@ export default function CollateralDetails({
   onChange,
   errors = {},
 }: CollateralDetailsProps) {
+  // Raw-string state for estimated value — rejects scientific notation, decimals, negatives.
+  const [rawEstimatedValue, setRawEstimatedValue] = React.useState<string>(
+    data.estimatedValue > 0 ? String(data.estimatedValue) : ''
+  );
+
   const propertyTypeOptions = [
     { value: 'residential', label: 'Residential Property' },
     { value: 'commercial', label: 'Commercial Property' },
@@ -53,12 +58,24 @@ export default function CollateralDetails({
 
         <Input
           label="Estimated Value"
-          type="number"
+          type="text"
+          inputMode="numeric"
           placeholder="Enter estimated value in INR"
-          value={data.estimatedValue || ''}
-          onChange={(e) =>
-            onChange('estimatedValue', parseInt(e.target.value) || 0)
-          }
+          value={rawEstimatedValue}
+          onChange={(e) => {
+            const raw = e.target.value;
+            setRawEstimatedValue(raw);
+            if (raw === '') { onChange('estimatedValue', 0); return; }
+            if (/^\d+$/.test(raw)) {
+              const n = Number(raw);
+              if (Number.isFinite(n)) onChange('estimatedValue', n);
+            }
+          }}
+          onBlur={() => {
+            if (rawEstimatedValue !== '' && !/^\d+$/.test(rawEstimatedValue)) {
+              setRawEstimatedValue(data.estimatedValue > 0 ? String(data.estimatedValue) : '');
+            }
+          }}
           error={errors.estimatedValue}
           helperText="Current market value of the collateral"
           required
@@ -79,8 +96,8 @@ export default function CollateralDetails({
           value={data.propertyAddress}
           onChange={(e) => onChange('propertyAddress', e.target.value)}
           error={errors.propertyAddress}
-          helperText="Full address where the collateral is located (max 500 characters)"
-          maxLength={500}
+          helperText="Full address where the collateral is located (max 150 characters)"
+          maxLength={150}
           required
         />
 
