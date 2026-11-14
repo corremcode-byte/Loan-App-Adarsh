@@ -74,7 +74,7 @@ export interface IApplication extends Document {
 
 const ExistingLoanSchema = new Schema<IExistingLoan>({
   loanType: { type: String, required: true },
-  outstandingAmount: { type: Number, required: true, min: 0 },
+  outstandingAmount: { type: Number, required: true, min: 0, max: 5_00_00_00_000 },
   emi: { type: Number, required: true, min: 0 },
 });
 
@@ -125,7 +125,11 @@ const ApplicationSchema = new Schema<IApplication>(
       enum: ['single', 'married', 'divorced', 'widowed'],
       required: true,
     },
-    email: { type: String, required: true },
+    email: {
+      type: String,
+      required: true,
+      match: [/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/, 'Invalid email format'],
+    },
 
     // Address
     address: { type: AddressSchema, required: true },

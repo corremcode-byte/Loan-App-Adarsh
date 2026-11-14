@@ -23,6 +23,10 @@ const ADDRESS_PATTERN = /^[\p{L}\p{M}\d\s,\-.#&'()/]+$/u;
 // \p{M} included for the same reason as NAME_PATTERN. Ampersand for "Daman & Diu".
 const CITY_PATTERN = /^[\p{L}\p{M}\s\-.&]+$/u;
 
+// UAT fix: Email — allows common address formats (plus-addressing, subdomains, hyphens)
+// while rejecting addresses with special characters like *, #, $, ^ in the local part or domain.
+export const EMAIL_PATTERN = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+
 // Rule: address fields (residential street, city, collateral property address) max 150 chars.
 const COLLATERAL_ADDRESS_MAX_LENGTH = 150;
 const STREET_MAX_LENGTH = 150;
@@ -36,6 +40,9 @@ const MAX_MONTHLY_INCOME = 5_00_00_000;
 
 // Rule: loan amount max ₹100 crore.
 const MAX_LOAN_AMOUNT = 1_00_00_00_000;
+
+// Rule: outstanding amount per existing loan max ₹500 crore.
+export const MAX_OUTSTANDING_AMOUNT = 5_00_00_00_000;
 
 // ─── Main validation function ────────────────────────────────────────────────
 
@@ -80,7 +87,7 @@ export function validateFormStep(
 
       if (!formData.email.trim()) {
         errors.email = 'Email is required';
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      } else if (!EMAIL_PATTERN.test(formData.email)) {
         errors.email = 'Invalid email format';
       }
 
@@ -184,6 +191,14 @@ export function validateFormStep(
       if (!formData.hasExistingLoans) {
         errors.hasExistingLoans = 'Please indicate whether you have existing loans';
       }
+
+      // UAT fix: outstanding amount per loan must not exceed ₹500 crore
+      formData.existingLoans.forEach((loan, i) => {
+        if (loan.outstandingAmount > MAX_OUTSTANDING_AMOUNT) {
+          errors[`outstandingAmount_${i}`] =
+            'Outstanding amount must not exceed ₹5,00,00,00,000 (500 Crore)';
+        }
+      });
 
       // Bug 19: collateral fields for secured loans
       if (formData.loanType === 'secured') {
