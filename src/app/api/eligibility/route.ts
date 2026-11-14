@@ -75,6 +75,12 @@ export async function POST(request: Request) {
       }
     }
 
+    // employerName: max 50 chars
+    const EMPLOYER_NAME_MAX_LENGTH = 50;
+    if (typeof data.employerName === 'string' && data.employerName.length > EMPLOYER_NAME_MAX_LENGTH) {
+      return NextResponse.json({ error: `Employer name must not exceed ${EMPLOYER_NAME_MAX_LENGTH} characters` }, { status: 400 });
+    }
+
     // Bug 5: enforce type-specific loan minimums
     const minAmount = data.loanType === 'secured' ? 100000 : 50000;
     if (data.loanAmount < minAmount) {

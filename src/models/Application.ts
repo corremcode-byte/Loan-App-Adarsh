@@ -144,7 +144,7 @@ const ApplicationSchema = new Schema<IApplication>(
       enum: ['salaried', 'self-employed', 'business', 'retired'],
       required: true,
     },
-    employerName: { type: String, required: true },
+    employerName: { type: String, required: true, maxlength: 50 },
     monthlyIncome: { type: Number, required: true, max: 5_00_00_000 },
     yearsOfExperience: { type: Number, required: true },
 

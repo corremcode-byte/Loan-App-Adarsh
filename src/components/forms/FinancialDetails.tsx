@@ -22,6 +22,8 @@ interface FinancialDetailsProps {
   onHasExistingLoansChange: (value: 'yes' | 'no') => void;
   onChange: (field: string, value: string | number | ExistingLoan[]) => void;
   errors?: Record<string, string>;
+  gstinNumber: string;
+  onGstinChange: (value: string) => void;
 }
 
 export default function FinancialDetails({
@@ -30,6 +32,8 @@ export default function FinancialDetails({
   onHasExistingLoansChange,
   onChange,
   errors = {},
+  gstinNumber,
+  onGstinChange,
 }: FinancialDetailsProps) {
   const [loanCount, setLoanCount] = React.useState<number>(() => {
     return data.existingLoans.length || 0;
@@ -62,8 +66,7 @@ export default function FinancialDetails({
     data.cibilScore > 0 ? String(data.cibilScore) : ''
   );
 
-  // GSTIN verification — local UI state only, no API integration yet.
-  const [gstinNumber, setGstinNumber] = React.useState('');
+  // GSTIN verification UI state — gstinNumber is lifted to page.tsx for submission-path validation.
   const [gstinVerified, setGstinVerified] = React.useState(false);
   const [gstinVerifying, setGstinVerifying] = React.useState(false);
   const [gstinError, setGstinError] = React.useState('');
@@ -104,12 +107,12 @@ export default function FinancialDetails({
       setRawTurnover('');
       setRawMonthlyIncome('');
       onChange('monthlyIncome', 0);
-      setGstinNumber('');
+      onGstinChange('');
       setGstinVerified(false);
       setGstinVerifying(false);
       setGstinError('');
     }
-  }, [data.occupation, onChange]);
+  }, [data.occupation, onChange, onGstinChange]);
 
   // When hasExistingLoans changes to 'no', clear existing loans
   useEffect(() => {
@@ -219,6 +222,7 @@ export default function FinancialDetails({
           value={data.employerName}
           onChange={(e) => onChange('employerName', e.target.value)}
           error={errors.employerName}
+          maxLength={50}
           required
         />
 
@@ -237,15 +241,15 @@ export default function FinancialDetails({
                   placeholder="e.g. 22AAAAA0000A1Z5"
                   value={gstinNumber}
                   onChange={(e) => {
-                    setGstinNumber(e.target.value.toUpperCase());
+                    onGstinChange(e.target.value.toUpperCase());
                     // Reset verification and any error if the user edits the GSTIN
                     if (gstinVerified) setGstinVerified(false);
                     if (gstinError) setGstinError('');
                   }}
-                  error={gstinError || undefined}
+                  error={gstinError || errors.gstin || undefined}
                 />
               </div>
-              <div className="flex items-end">
+              <div className="sm:pt-[26px]">
                 <button
                   type="button"
                   onClick={handleVerifyGstin}

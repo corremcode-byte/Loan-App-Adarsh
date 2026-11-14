@@ -17,6 +17,7 @@ import EligibilityResult from '@/components/EligibilityResult';
 import { ApplicationFormData, Collateral, ExistingLoan, EligibilityResult as EligibilityResultType, FormStep } from '@/types';
 import { recommendLoanSlab, formatSlabAmount, SlabRecommendationResult } from '@/lib/loanSlabRecommendation';
 import { validateFormStep } from '@/lib/formValidation';
+import { validateGSTIN } from '@/lib/gstinValidation';
 
 const initialFormData: ApplicationFormData = {
   phoneNumber: '',
@@ -250,6 +251,14 @@ export default function ApplyPage() {
   const [showEligibility, setShowEligibility] = useState(false);
   const [slabRecommendation, setSlabRecommendation] = useState<SlabRecommendationResult | null>(null);
 
+  // Lifted from FinancialDetails — needed in validateStep for submission-path GSTIN validation.
+  const [gstinNumber, setGstinNumber] = useState('');
+
+  const handleGstinChange = useCallback((value: string) => {
+    setGstinNumber(value);
+    setErrors((prev) => ({ ...prev, gstin: '' }));
+  }, []);
+
   // Prevents the save effect from recreating the draft after a successful submission
   const submittedRef = useRef(false);
 
@@ -342,6 +351,10 @@ export default function ApplyPage() {
 
   const validateStep = (): boolean => {
     const newErrors = validateFormStep(currentStep, formData);
+    if (currentStep === 'financial' && formData.occupation === 'business' && gstinNumber.trim()) {
+      const gstinValidationError = validateGSTIN(gstinNumber);
+      if (gstinValidationError) newErrors.gstin = gstinValidationError;
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -499,6 +512,8 @@ export default function ApplyPage() {
               onHasExistingLoansChange={(value) => updateFormData('hasExistingLoans', value)}
               onChange={updateFormData}
               errors={errors}
+              gstinNumber={gstinNumber}
+              onGstinChange={handleGstinChange}
             />
             {formData.loanType === 'secured' && (
               <div className="border-t pt-8">

@@ -36,7 +36,7 @@ jest.mock('@/lib/emi', () => ({
 
 import Application from '@/models/Application';
 import { validateGSTIN } from '../lib/gstinValidation';
-import { validateFormStep, MAX_OUTSTANDING_AMOUNT } from '../lib/formValidation';
+import { validateFormStep, MAX_OUTSTANDING_AMOUNT, EMPLOYER_NAME_MAX_LENGTH } from '../lib/formValidation';
 import { POST as postApplications } from '../app/api/applications/route';
 import { POST as postEligibility } from '../app/api/eligibility/route';
 import { ApplicationFormData } from '../types';
@@ -474,6 +474,125 @@ describe('outstandingAmount — POST /api/eligibility', () => {
   it('rejects negative outstandingAmount', async () => {
     const res = await postEligibility(makeRequest(withLoan(-1)));
     expect(res.status).toBe(400);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. Employer Name / Business Name length validation
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('EMPLOYER_NAME_MAX_LENGTH constant', () => {
+  it('equals 50', () => {
+    expect(EMPLOYER_NAME_MAX_LENGTH).toBe(50);
+  });
+});
+
+describe('employerName — formValidation.ts (financial step)', () => {
+  it('accepts exactly 50 characters', () => {
+    const errors = validateFormStep('financial', baseForm({ employerName: 'A'.repeat(50) }));
+    expect(errors.employerName).toBeUndefined();
+  });
+
+  it('rejects 51 characters', () => {
+    const errors = validateFormStep('financial', baseForm({ employerName: 'A'.repeat(51) }));
+    expect(errors.employerName).toBeTruthy();
+    expect(errors.employerName).toMatch(/50 characters/i);
+  });
+
+  it('rejects empty string (required)', () => {
+    const errors = validateFormStep('financial', baseForm({ employerName: '' }));
+    expect(errors.employerName).toBeTruthy();
+  });
+
+  it('accepts short valid name', () => {
+    const errors = validateFormStep('financial', baseForm({ employerName: 'Acme Corp' }));
+    expect(errors.employerName).toBeUndefined();
+  });
+
+  it('accepts business name with punctuation (AT&T India Pvt. Ltd.)', () => {
+    const errors = validateFormStep('financial', baseForm({ employerName: 'AT&T India Pvt. Ltd.' }));
+    expect(errors.employerName).toBeUndefined();
+  });
+
+  it('accepts business name with Unicode (Bhārat Forge Ltd.)', () => {
+    const errors = validateFormStep('financial', baseForm({ employerName: 'Bhārat Forge Ltd.' }));
+    expect(errors.employerName).toBeUndefined();
+  });
+
+  it('accepts name with slash (M/s. ABC Enterprises)', () => {
+    const errors = validateFormStep('financial', baseForm({ employerName: 'M/s. ABC Enterprises' }));
+    expect(errors.employerName).toBeUndefined();
+  });
+
+  it('accepts name with apostrophe (O\'Brien & Sons)', () => {
+    const errors = validateFormStep('financial', baseForm({ employerName: "O'Brien & Sons" }));
+    expect(errors.employerName).toBeUndefined();
+  });
+
+  it('raw length 50 with leading/trailing spaces rejected (raw length exceeds 50)', () => {
+    // '  ' + 48 'A's + '  ' = 52 chars raw → rejected
+    const errors = validateFormStep('financial', baseForm({ employerName: '  ' + 'A'.repeat(48) + '  ' }));
+    expect(errors.employerName).toBeTruthy();
+  });
+
+  it('raw string of exactly 50 chars that includes spaces is accepted', () => {
+    // 'AT&T ' repeated = 5 chars × 10 = 50 chars raw
+    const errors = validateFormStep('financial', baseForm({ employerName: 'AT&T '.repeat(10) }));
+    expect(errors.employerName).toBeUndefined();
+  });
+
+  it('whitespace-only employerName is rejected (required check via trim)', () => {
+    const errors = validateFormStep('financial', baseForm({ employerName: '     ' }));
+    expect(errors.employerName).toBeTruthy();
+  });
+});
+
+describe('employerName — POST /api/applications', () => {
+  it('accepts exactly 50 characters', async () => {
+    const res = await postApplications(makeRequest({ ...minValidPayload(), employerName: 'A'.repeat(50) }));
+    expect(res.status).toBe(200);
+  });
+
+  it('rejects 51 characters with 400', async () => {
+    const res = await postApplications(makeRequest({ ...minValidPayload(), employerName: 'A'.repeat(51) }));
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toMatch(/50 characters/i);
+  });
+
+  it('rejects empty employerName with 400', async () => {
+    const res = await postApplications(makeRequest({ ...minValidPayload(), employerName: '' }));
+    expect(res.status).toBe(400);
+  });
+
+  it('accepts business name with punctuation', async () => {
+    const res = await postApplications(makeRequest({ ...minValidPayload(), employerName: 'AT&T India Pvt. Ltd.' }));
+    expect(res.status).toBe(200);
+  });
+
+  it('rejects raw length >50 even when non-space chars ≤50 (surrounding spaces count)', async () => {
+    // '  ' + 'A'.repeat(50) + '  ' = 54 chars raw → rejected
+    const res = await postApplications(makeRequest({ ...minValidPayload(), employerName: '  ' + 'A'.repeat(50) + '  ' }));
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('employerName — POST /api/eligibility', () => {
+  it('accepts exactly 50 characters', async () => {
+    const res = await postEligibility(makeRequest({ ...minValidPayload(), employerName: 'A'.repeat(50) }));
+    expect(res.status).toBe(200);
+  });
+
+  it('rejects 51 characters with 400', async () => {
+    const res = await postEligibility(makeRequest({ ...minValidPayload(), employerName: 'A'.repeat(51) }));
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toMatch(/50 characters/i);
+  });
+
+  it('accepts short valid name', async () => {
+    const res = await postEligibility(makeRequest({ ...minValidPayload(), employerName: 'Acme Corp' }));
+    expect(res.status).toBe(200);
   });
 });
 
