@@ -35,6 +35,9 @@ const CITY_MAX_LENGTH = 150;
 // Rule: name fields max 25 characters each.
 const NAME_MAX_LENGTH = 25;
 
+// Rule: employer/business name max 50 characters.
+export const EMPLOYER_NAME_MAX_LENGTH = 50;
+
 // Rule: monthly income max ₹5 crore (annual turnover equivalent: ₹60 crore).
 const MAX_MONTHLY_INCOME = 5_00_00_000;
 
@@ -149,7 +152,11 @@ export function validateFormStep(
 
     case 'financial': {
       if (!formData.occupation) errors.occupation = 'Occupation is required';
-      if (!formData.employerName.trim()) errors.employerName = 'Employer name is required';
+      if (!formData.employerName.trim()) {
+        errors.employerName = 'Employer name is required';
+      } else if (formData.employerName.length > EMPLOYER_NAME_MAX_LENGTH) {
+        errors.employerName = `Employer name must be ${EMPLOYER_NAME_MAX_LENGTH} characters or fewer`;
+      }
 
       if (
         !formData.monthlyIncome ||

@@ -49,6 +49,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
 
+    // employerName: required, max 50 chars
+    const EMPLOYER_NAME_MAX_LENGTH = 50;
+    if (!data.employerName || typeof data.employerName !== 'string' || !data.employerName.trim()) {
+      return NextResponse.json({ error: 'Employer name is required' }, { status: 400 });
+    }
+    if (data.employerName.length > EMPLOYER_NAME_MAX_LENGTH) {
+      return NextResponse.json({ error: `Employer name must not exceed ${EMPLOYER_NAME_MAX_LENGTH} characters` }, { status: 400 });
+    }
+
     // loanAmount: type, finite, non-negative, spec maximum ₹100 Crore
     if (typeof data.loanAmount !== 'number' || !Number.isFinite(data.loanAmount) || data.loanAmount < 0) {
       return NextResponse.json({ error: 'Loan amount must be a valid non-negative number' }, { status: 400 });
