@@ -37,7 +37,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Preferred tenure must be a valid positive number' }, { status: 400 });
     }
 
-    // existingLoans[i].outstandingAmount: negative values can game analyzeDebtLoad eligibility score
+    // existingLoans[i].outstandingAmount: negative values can game analyzeDebtLoad eligibility score;
+    // values above ₹500 crore are rejected as unrealistic.
+    const MAX_OUTSTANDING_AMOUNT = 5_00_00_00_000;
     if (Array.isArray(data.existingLoans)) {
       for (const loan of data.existingLoans) {
         if (
@@ -48,6 +50,12 @@ export async function POST(request: Request) {
           loan.outstandingAmount < 0
         ) {
           return NextResponse.json({ error: 'Invalid existing loan data' }, { status: 400 });
+        }
+        if (loan.outstandingAmount > MAX_OUTSTANDING_AMOUNT) {
+          return NextResponse.json(
+            { error: 'Outstanding loan amount must not exceed ₹5,00,00,00,000 (500 Crore)' },
+            { status: 400 }
+          );
         }
       }
     } else if (data.existingLoans !== undefined) {

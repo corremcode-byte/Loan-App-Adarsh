@@ -43,6 +43,12 @@ export async function POST(request: Request) {
       }
     }
 
+    // UAT fix: email format validation
+    const EMAIL_PATTERN = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+    if (data.email && !EMAIL_PATTERN.test(data.email)) {
+      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
+    }
+
     // loanAmount: type, finite, non-negative, spec maximum ₹100 Crore
     if (typeof data.loanAmount !== 'number' || !Number.isFinite(data.loanAmount) || data.loanAmount < 0) {
       return NextResponse.json({ error: 'Loan amount must be a valid non-negative number' }, { status: 400 });
@@ -67,7 +73,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // existingLoans[i].outstandingAmount: negative values can game analyzeDebtLoad eligibility score
+    // existingLoans[i].outstandingAmount: negative values can game analyzeDebtLoad eligibility score;
+    // values above ₹500 crore are rejected as unrealistic.
+    const MAX_OUTSTANDING_AMOUNT = 5_00_00_00_000;
     if (Array.isArray(data.existingLoans)) {
       for (const loan of data.existingLoans) {
         if (
@@ -78,6 +86,12 @@ export async function POST(request: Request) {
           loan.outstandingAmount < 0
         ) {
           return NextResponse.json({ error: 'Invalid existing loan data' }, { status: 400 });
+        }
+        if (loan.outstandingAmount > MAX_OUTSTANDING_AMOUNT) {
+          return NextResponse.json(
+            { error: 'Outstanding loan amount must not exceed ₹5,00,00,00,000 (500 Crore)' },
+            { status: 400 }
+          );
         }
       }
     } else if (data.existingLoans !== undefined) {

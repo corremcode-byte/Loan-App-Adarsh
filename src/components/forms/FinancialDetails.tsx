@@ -6,6 +6,8 @@ import Select from '@/components/ui/Select';
 import { CardTitle, CardDescription } from '@/components/ui/Card';
 import { ExistingLoan } from '@/types';
 import { formatCurrency, toMonthlyEMI } from '@/lib/emi';
+import { validateGSTIN } from '@/lib/gstinValidation';
+import { MAX_OUTSTANDING_AMOUNT } from '@/lib/formValidation';
 
 interface FinancialDetailsProps {
   data: {
@@ -64,6 +66,7 @@ export default function FinancialDetails({
   const [gstinNumber, setGstinNumber] = React.useState('');
   const [gstinVerified, setGstinVerified] = React.useState(false);
   const [gstinVerifying, setGstinVerifying] = React.useState(false);
+  const [gstinError, setGstinError] = React.useState('');
 
   // Track previous occupation so we can reset income + GSTIN on occupation change.
   const prevOccupationRef = React.useRef(data.occupation);
@@ -104,6 +107,7 @@ export default function FinancialDetails({
       setGstinNumber('');
       setGstinVerified(false);
       setGstinVerifying(false);
+      setGstinError('');
     }
   }, [data.occupation, onChange]);
 
@@ -154,6 +158,16 @@ export default function FinancialDetails({
   // On failure: display the API error message inline.
   const handleVerifyGstin = () => {
     if (!gstinNumber.trim()) return;
+
+    // Validate format and checksum before the simulated API call.
+    const validationError = validateGSTIN(gstinNumber);
+    if (validationError) {
+      setGstinError(validationError);
+      setGstinVerified(false);
+      return;
+    }
+
+    setGstinError('');
     setGstinVerifying(true);
     setGstinVerified(false);
     setTimeout(() => {
@@ -224,9 +238,11 @@ export default function FinancialDetails({
                   value={gstinNumber}
                   onChange={(e) => {
                     setGstinNumber(e.target.value.toUpperCase());
-                    // Reset verification if the user edits the GSTIN after verifying
+                    // Reset verification and any error if the user edits the GSTIN
                     if (gstinVerified) setGstinVerified(false);
+                    if (gstinError) setGstinError('');
                   }}
+                  error={gstinError || undefined}
                 />
               </div>
               <div className="flex items-end">
@@ -545,6 +561,11 @@ export default function FinancialDetails({
                               if (Number.isFinite(n)) handleLoanUpdate(index, 'outstandingAmount', n);
                             }
                           }}
+                          error={
+                            loan.outstandingAmount > MAX_OUTSTANDING_AMOUNT
+                              ? 'Outstanding amount must not exceed ₹5,00,00,00,000 (500 Crore)'
+                              : errors[`outstandingAmount_${index}`]
+                          }
                           required
                         />
                       </div>
